@@ -13,8 +13,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import HeroImage from "../../public/images/cook.png"; // Place images in the public folder
-import TestimonialImage from "../../public/images/nitfut.jpg"; // Place images in the public folder
+import HeroImage from "../../public/images/cook.png";
+import TestimonialImage from "../../public/images/nitfut.jpg";
 
 const LandingPage: React.FC = () => {
   return (
