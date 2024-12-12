@@ -88,7 +88,7 @@ const LandingPage: React.FC = () => {
             src={HeroImage}
             alt="Healthy lifestyle"
             width={400}
-            height={300}
+            height={500}
             style={{ borderRadius: "10px" }}
           />
         </Box>
@@ -160,7 +160,7 @@ const LandingPage: React.FC = () => {
                   src={TestimonialImage}
                   alt="John Doe"
                   width={200}
-                  height={150}
+                  height={200}
                   style={{
                     borderRadius: "10px",
                   }}
