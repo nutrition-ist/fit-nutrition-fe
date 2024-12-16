@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import Link from "next/link";
 import axios from "axios";
@@ -19,7 +19,19 @@ const LoginPage: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [redirect, setRedirect] = useState<boolean>(false); // Control redirect
+  const [redirectUrl, setRedirectUrl] = useState<string>("dietitian-dashboard");
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const queryParams = new URLSearchParams(window.location.search);
+    const redirect = queryParams.get("redirect") || "dietitian-dashboard";
+
+    setRedirectUrl(redirect);
+
+    if (token) {
+      window.location.href = `/${redirect}`;
+    }
+  }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -37,17 +49,18 @@ const LoginPage: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/token/",
-        formData
-      );
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; 
+
+      const response = await axios.post(`${apiUrl}/token/`, formData);
 
       const { access, refresh } = response.data;
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
 
       setSuccessMessage("Login successful!");
-      setRedirect(true); // Trigger redirect
+
+
+      window.location.href = `/${redirectUrl}`;
     } catch (err: any) {
       setError(err.response?.data?.detail || "Invalid username or password.");
     }
@@ -108,16 +121,13 @@ const LoginPage: React.FC = () => {
         Login
       </Button>
 
-      {/* Redirect Link after successful login */}
-      {redirect && (
-        <Box textAlign="center" mt={2}>
-          <Link href="/dietitian-dashboard" passHref>
-            <Button variant="outlined" color="secondary">
-              Go to Dashboard
-            </Button>
-          </Link>
-        </Box>
-      )}
+      <Box textAlign="center" mt={2}>
+        <Link href="/" passHref>
+          <Button variant="outlined" color="secondary">
+            Go Back Home
+          </Button>
+        </Link>
+      </Box>
     </Box>
   );
 };

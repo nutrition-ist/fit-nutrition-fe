@@ -27,7 +27,7 @@ const DietitianProfile: React.FC = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:8000/profile"); // Replace with real backend endpoint
+        const response = await axios.get("http://localhost:8000/dietitian/");
         setProfile(response.data);
         setFormData(response.data);
       } catch (err: any) {
@@ -50,7 +50,7 @@ const DietitianProfile: React.FC = () => {
     try {
       setError(null);
       const response = await axios.put(
-        "http://localhost:8000/profile",
+        "http://localhost:8000/dietitian/",
         formData
       );
       setProfile(response.data);
@@ -110,7 +110,7 @@ const DietitianProfile: React.FC = () => {
           >
             <Image
               src={
-                formData?.profilePicture || "/images/default-profile.jpg" // Placeholder in public folder
+                formData?.profilePicture || "/images/default-profile.jpg" 
               }
               alt="Profile"
               width={150}
