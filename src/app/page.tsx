@@ -13,8 +13,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import HeroImage from "../../public/images/cook.png"; // Place images in the public folder
-import TestimonialImage from "../../public/images/nitfut.jpg"; // Place images in the public folder
+import HeroImage from "../../public/images/cook.png";
+import TestimonialImage from "../../public/images/nitfut.jpg";
 
 const LandingPage: React.FC = () => {
   return (
@@ -150,7 +150,7 @@ const LandingPage: React.FC = () => {
         </Typography>
         <Grid container spacing={4} justifyContent="center">
           <Grid item xs={12} sm={6}>
-            <Card>
+            <Card role="article">
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   John Doe
