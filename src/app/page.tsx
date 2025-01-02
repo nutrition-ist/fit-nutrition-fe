@@ -150,7 +150,7 @@ const LandingPage: React.FC = () => {
         </Typography>
         <Grid container spacing={4} justifyContent="center">
           <Grid item xs={12} sm={6}>
-            <Card>
+            <Card role="article">
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   John Doe
