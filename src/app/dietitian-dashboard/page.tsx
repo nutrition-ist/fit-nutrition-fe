@@ -70,7 +70,9 @@ const DietitianDashboard: React.FC = () => {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://hazalkaynak.pythonanywhere.com/";
 
     const fetchProfile = async () => {
       try {
@@ -157,7 +159,9 @@ const DietitianDashboard: React.FC = () => {
               {profile.dietician.about_me}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 1 }}>
-              {profile.dietician.qualifications.qualifications.join(", ")}
+              {profile.dietician.qualifications?.qualifications?.length
+                ? profile.dietician.qualifications.qualifications.join(", ")
+                : "No qualifications available."}
             </Typography>
           </Card>
         </Grid>

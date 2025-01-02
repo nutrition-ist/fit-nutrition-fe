@@ -49,7 +49,7 @@ const LoginPage: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; 
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://hazalkaynak.pythonanywhere.com/"; 
 
       const response = await axios.post(`${apiUrl}/token/`, formData);
 

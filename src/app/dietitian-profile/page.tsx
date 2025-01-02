@@ -27,7 +27,7 @@ const DietitianProfile: React.FC = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:8000/dietitian/");
+        const response = await axios.get("https://hazalkaynak.pythonanywhere.com/dietitian/");
         setProfile(response.data);
         setFormData(response.data);
       } catch (err: any) {
@@ -50,7 +50,7 @@ const DietitianProfile: React.FC = () => {
     try {
       setError(null);
       const response = await axios.put(
-        "http://localhost:8000/dietitian/",
+        "https://hazalkaynak.pythonanywhere.com/dietitian/",
         formData
       );
       setProfile(response.data);
