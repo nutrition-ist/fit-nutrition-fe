@@ -13,8 +13,10 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import Link from "next/link";
+import Image from "next/image";
+import placeholderimage from "../../../public/images/placeholder.jpg";
 
-const DietitiansList: React.FC = () => {
+const Dietitians: React.FC = () => {
   const [dietitians, setDietitians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,20 @@ const DietitiansList: React.FC = () => {
       <Grid container spacing={4}>
         {dietitians.map((dietitian) => (
           <Grid item xs={12} sm={6} key={dietitian.id}>
-            <Card sx={{ height: "100%" }}>
+            <Card
+              sx={{ height: "100%", display: "flex", alignItems: "center" }}
+            >
+              <Image
+                src={dietitian.profile_picture || placeholderimage}
+                alt={`${dietitian.first_name} ${dietitian.last_name}`}
+                width={80}
+                height={80}
+                style={{
+                  borderRadius: "50%",
+                  marginLeft: "16px",
+                  objectFit: "cover",
+                }}
+              />
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   {dietitian.first_name} {dietitian.last_name}
@@ -123,4 +138,4 @@ const DietitiansList: React.FC = () => {
   );
 };
 
-export default DietitiansList;
+export default Dietitians;
