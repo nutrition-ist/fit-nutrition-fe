@@ -38,7 +38,7 @@ const LandingPage: React.FC = () => {
               Home
             </Button>
           </Link>
-          <Link href="/dietitian-profile" passHref>
+          <Link href="/dietitians" passHref>
             <Button variant="text" sx={{ mx: 1 }}>
               Dietitians
             </Button>
