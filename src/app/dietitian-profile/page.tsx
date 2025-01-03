@@ -9,12 +9,11 @@ import {
   TextField,
   Button,
   Grid,
-  Card,
-  CardContent,
   CircularProgress,
 } from "@mui/material";
 import Image from "next/image";
 import axios from "axios";
+import placeholderimage from "../../../public/images/placeholder.jpg";
 
 const DietitianProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -25,11 +24,24 @@ const DietitianProfile: React.FC = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) {
+        // Redirect to login with a return URL
+        window.location.href = `/login?redirect=dietitian-dashboard`;
+        return;
+      }
+
       try {
         setLoading(true);
-        const response = await axios.get("https://hazalkaynak.pythonanywhere.com/dietitian/");
-        setProfile(response.data);
-        setFormData(response.data);
+        const response = await axios.get(
+          "https://hazalkaynak.pythonanywhere.com/dietitian/me/",
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+        const dietician = response.data.dietician;
+        setProfile(dietician);
+        setFormData(dietician);
       } catch (err: any) {
         setError("Failed to fetch profile. Please try again later.");
       } finally {
@@ -40,20 +52,25 @@ const DietitianProfile: React.FC = () => {
     fetchProfile();
   }, []);
 
-  // Handle input changes
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
+    const accessToken = localStorage.getItem("accessToken");
     try {
       setError(null);
       const response = await axios.put(
-        "https://hazalkaynak.pythonanywhere.com/dietitian/",
-        formData
+        "https://hazalkaynak.pythonanywhere.com/dietitian/me/",
+        { dietician: formData },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
       );
-      setProfile(response.data);
+      const updatedDietician = response.data.dietician;
+      setProfile(updatedDietician);
+      setFormData(updatedDietician);
       setIsEditing(false);
     } catch (err: any) {
       setError("Failed to update profile. Please try again.");
@@ -109,9 +126,7 @@ const DietitianProfile: React.FC = () => {
             }}
           >
             <Image
-              src={
-                formData?.profilePicture || "/images/default-profile.jpg" 
-              }
+              src={formData?.profile_picture || placeholderimage}
               alt="Profile"
               width={150}
               height={150}
@@ -134,7 +149,7 @@ const DietitianProfile: React.FC = () => {
                       reader.onloadend = () => {
                         setFormData((prev: any) => ({
                           ...prev,
-                          profilePicture: reader.result,
+                          profile_picture: reader.result,
                         }));
                       };
                       reader.readAsDataURL(file);
@@ -145,10 +160,20 @@ const DietitianProfile: React.FC = () => {
             )}
 
             <TextField
-              label="Name"
+              label="First Name"
               fullWidth
-              name="identity"
-              value={formData?.identity || ""}
+              name="first_name"
+              value={formData?.first_name || ""}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              label="Last Name"
+              fullWidth
+              name="last_name"
+              value={formData?.last_name || ""}
               onChange={handleInputChange}
               disabled={!isEditing}
               sx={{ mb: 2 }}
@@ -165,10 +190,10 @@ const DietitianProfile: React.FC = () => {
             />
 
             <TextField
-              label="Cell Number"
+              label="Phone"
               fullWidth
-              name="cellNumber"
-              value={formData?.cellNumber || ""}
+              name="phone"
+              value={formData?.phone || ""}
               onChange={handleInputChange}
               disabled={!isEditing}
               sx={{ mb: 2 }}
@@ -186,7 +211,7 @@ const DietitianProfile: React.FC = () => {
           </Box>
         </Grid>
 
-        {/* About Me and Highlighted Recipes Section */}
+        {/* About Me Section */}
         <Grid item xs={12} sm={8}>
           <Typography variant="h6" sx={{ mb: 1 }}>
             About Me:
@@ -194,8 +219,8 @@ const DietitianProfile: React.FC = () => {
           {isEditing ? (
             <TextField
               fullWidth
-              name="aboutMe"
-              value={formData?.aboutMe || ""}
+              name="about_me"
+              value={formData?.about_me || ""}
               onChange={handleInputChange}
               multiline
               rows={4}
@@ -203,29 +228,9 @@ const DietitianProfile: React.FC = () => {
             />
           ) : (
             <Typography variant="body1" sx={{ mb: 3 }}>
-              {profile?.aboutMe || "No information available."}
+              {profile?.about_me || "No information available."}
             </Typography>
           )}
-
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Highlighted Recipes:
-          </Typography>
-          <Grid container spacing={2}>
-            {profile?.highlightedRecipes?.map((recipe: any) => (
-              <Grid item xs={12} sm={6} key={recipe.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                      {recipe.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {recipe.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
         </Grid>
       </Grid>
 
