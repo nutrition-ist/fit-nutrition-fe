@@ -1,71 +1,46 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Grid, CircularProgress } from "@mui/material";
-import { useParams } from "next/navigation";
+import React from "react";
+import { Box, Typography, Grid } from "@mui/material";
 import axios from "axios";
 import Image from "next/image";
 import placeholderimage from "../../../../public/images/placeholder.jpg";
+import { notFound } from "next/navigation";
 
-const DietitianProfilePage: React.FC = () => {
-  const { username } = useParams();
-  const [profile, setProfile] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+interface Profile {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  about_me: string;
+  profile_picture?: string;
+}
 
-  useEffect(() => {
-    setIsClient(true);
+const fetchDietitianProfile = async (username: string): Promise<Profile | null> => {
+  try {
+    const response = await axios.get(
+      `https://hazalkaynak.pythonanywhere.com/dietitian/${username}`
+    );
 
-    const fetchDietitianProfile = async () => {
-      if (!username) return;
-
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `https://hazalkaynak.pythonanywhere.com/dietitian/${username}/`
-        );
-
-        if (response.data && response.data.dietician) {
-          setProfile(response.data.dietician);
-        } else {
-          throw new Error("Unexpected API response format.");
-        }
-      } catch (err: any) {
-        console.error("Error fetching profile:", err.message || err);
-        setError("Failed to fetch dietitian profile. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDietitianProfile();
-  }, [username]);
-  if (!isClient) {
+    if (response.data && response.data.dietician) {
+      return response.data.dietician;
+    } else {
+      console.error("Unexpected API response format.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching profile:", error);
     return null;
   }
+};
 
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+// Main Profile Page Component
+const DietitianProfilePage = async ({ params }: { params: { username: string } }) => {
+  const { username } = await params;
+  const profile = await fetchDietitianProfile(username);
 
-  if (error) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 5 }}>
-        <Typography color="error">{error}</Typography>
-      </Box>
-    );
+  // Redirect to 404 if profile is not found
+  if (!profile) {
+    return notFound();
   }
 
   return (
