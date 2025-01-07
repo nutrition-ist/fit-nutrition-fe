@@ -35,7 +35,7 @@ const fetchDietitianProfile = async (username: string): Promise<Profile | null> 
 
 // Main Profile Page Component
 const DietitianProfilePage = async ({ params }: { params: { username: string } }) => {
-  const { username } = await params;
+  const { username } = params;
   const profile = await fetchDietitianProfile(username);
 
   // Redirect to 404 if profile is not found

@@ -60,8 +60,12 @@ const LoginPage: React.FC = () => {
 
 
       window.location.href = `/${redirectUrl}`;
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Invalid username or password.");
+    } catch (err: unknown) {
+      if (err instanceof Error && axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || "Invalid username or password.");
+      } else {
+        setError("An unexpected error occurred.");
+      }
     }
   };
 

@@ -15,8 +15,26 @@ import Link from "next/link";
 import Image from "next/image";
 import placeholderimage from "../../../public/images/placeholder.jpg";
 
+interface DietitianType {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  about_me?: string;
+  qualifications?: string[];
+  phone: string;
+  address: string;
+  profile_picture: string | null;
+  facebook: string[] | null;
+  instagram: string[] | null;
+  x_twitter: string[] | null;
+  youtube: string[] | null;
+  whatsapp: string[] | null;
+}
+
 const Dietitians: React.FC = () => {
-  const [dietitians, setDietitians] = useState<any[]>([]);
+  const [dietitians, setDietitians] = useState<DietitianType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
