@@ -1,12 +1,10 @@
-"use client";
-
 import React from "react";
 import {
   Box,
   Typography,
   Button,
   TextField,
-  Grid,
+  Grid, //deprecated
   Card,
   CardContent,
 } from "@mui/material";
