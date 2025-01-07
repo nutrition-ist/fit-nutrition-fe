@@ -11,8 +11,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import HeroImage from "../../public/images/cook.png";
-import TestimonialImage from "../../public/images/nitfut.jpg";
+import HeroImage from "Fi/cook.png";
+import TestimonialImage from "Fi/nitfut.jpg";
 
 const LandingPage: React.FC = () => {
   return (

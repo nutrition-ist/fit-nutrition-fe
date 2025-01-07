@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography, Grid } from "@mui/material";
 import axios from "axios";
 import Image from "next/image";
-import placeholderimage from "../../../../public/images/placeholder.jpg";
+import placeholderimage from "Fi/placeholder.jpg";
 import { notFound } from "next/navigation";
 
 interface Profile {
