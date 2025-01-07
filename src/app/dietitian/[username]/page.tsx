@@ -1,70 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Grid, CircularProgress } from "@mui/material";
+import React from "react";
+import { Box, Typography, Grid } from "@mui/material";
 import { useParams } from "next/navigation";
-import axios from "axios";
 import Image from "next/image";
 import placeholderimage from "../../../../public/images/placeholder.jpg";
+import { useDietitianContext } from "@/context/DietitianContext";
 
 const DietitianProfilePage: React.FC = () => {
   const { username } = useParams();
-  const [profile, setProfile] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const { dietitians } = useDietitianContext();
 
-  useEffect(() => {
-    setIsClient(true);
+  const profile = dietitians.find((dietitian) => dietitian.username === username);
 
-    const fetchDietitianProfile = async () => {
-      if (!username) return;
-
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `https://hazalkaynak.pythonanywhere.com/dietitian/${username}/`
-        );
-
-        if (response.data && response.data.dietician) {
-          setProfile(response.data.dietician);
-        } else {
-          throw new Error("Unexpected API response format.");
-        }
-      } catch (err: any) {
-        console.error("Error fetching profile:", err.message || err);
-        setError("Failed to fetch dietitian profile. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDietitianProfile();
-  }, [username]);
-  if (!isClient) {
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
+  if (!profile) {
     return (
       <Box sx={{ textAlign: "center", mt: 5 }}>
-        <Typography color="error">{error}</Typography>
+        <Typography color="error">Dietitian not found.</Typography>
       </Box>
     );
   }

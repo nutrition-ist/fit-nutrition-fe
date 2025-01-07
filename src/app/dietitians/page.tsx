@@ -15,9 +15,10 @@ import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
 import placeholderimage from "../../../public/images/placeholder.jpg";
+import { useDietitianContext } from "@/context/DietitianContext";
 
 const Dietitians: React.FC = () => {
-  const [dietitians, setDietitians] = useState<any[]>([]);
+  const { dietitians, setDietitians } = useDietitianContext(); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +31,7 @@ const Dietitians: React.FC = () => {
         );
 
         if (response.data && Array.isArray(response.data.dietician_list)) {
-          setDietitians(response.data.dietician_list);
+          setDietitians(response.data.dietician_list); 
         } else {
           throw new Error("Unexpected API response format.");
         }
@@ -42,8 +43,12 @@ const Dietitians: React.FC = () => {
       }
     };
 
-    fetchDietitians();
-  }, []);
+    if (dietitians.length === 0) {
+      fetchDietitians(); //bu olmazsa surekli cekeriz
+    } else {
+      setLoading(false);
+    }
+  }, [dietitians, setDietitians]);
 
   if (loading) {
     return (
@@ -119,6 +124,9 @@ const Dietitians: React.FC = () => {
                   sx={{ mb: 1 }}
                 >
                   <strong>Phone:</strong> {dietitian.phone}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  <strong>Address:</strong> {dietitian.address || "N/A"}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   <strong>About Me:</strong>{" "}
