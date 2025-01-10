@@ -51,9 +51,14 @@ const Dietitians: React.FC = () => {
         } else {
           throw new Error("Unexpected API response format.");
         }
-      } catch (err: any) {
-        console.error("Error fetching dietitians:", err.message || err);
-        setError("Failed to fetch dietitians. Please try again later.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error("Error fetching dietitians:", err.message);
+          setError("Failed to fetch dietitians. Please try again later.");
+        } else {
+          console.error("Unexpected error:", err);
+          setError("An unexpected error occurred. Please try again later.");
+        }
       } finally {
         setLoading(false);
       }
