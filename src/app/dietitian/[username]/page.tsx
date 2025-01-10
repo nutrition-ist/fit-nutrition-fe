@@ -15,7 +15,29 @@ interface Profile {
   profile_picture?: string;
 }
 
-// Fetch dietitian profile data from the API
+//Fetch all the Dietians then get their usernames for generating static path for the generateStaticParams function.
+const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
+  try {
+    const response = await axios.get(
+      "https://hazalkaynak.pythonanywhere.com/dietitian/"
+    );
+
+    if (response.data && Array.isArray(response.data.dietician_list)) {
+      return response.data.dietician_list.map(
+        (dietitian: { username: string }) => ({
+          username: dietitian.username,
+        })
+      );
+    } else {
+      console.error("Unexpected API response format.");
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching dietitian list:", error);
+    return [];
+  }
+};
+
 const fetchDietitianProfile = async (
   username: string
 ): Promise<Profile | null> => {
@@ -36,16 +58,25 @@ const fetchDietitianProfile = async (
   }
 };
 
+
+// Generate Static Params for Dynamic Route
+export const generateStaticParams = async () => {
+  const dietitians = await fetchAllDietitians();
+  return dietitians.map((dietitian) => ({
+    username: dietitian.username,
+  }));
+};
+
 // Main Profile Page Component
-type Params = Promise<{ username: string }>;
 export default async function DietitianProfilePage({
-  params,
+  params: paramsPromise,
 }: {
-  params: Params;
+  params: Promise<{ username: string }>;
 }) {
-  const { username } = await params; //Cutting Edge fix
+  const { username } = await paramsPromise; // Await here fixes my hopes
   const profile = await fetchDietitianProfile(username);
 
+  // Redirect to 404 if profile is not found
   if (!profile) {
     return notFound();
   }
