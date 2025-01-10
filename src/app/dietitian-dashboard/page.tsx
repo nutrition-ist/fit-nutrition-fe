@@ -79,12 +79,18 @@ const DietitianDashboard: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfile(response.data);
-      } catch (err: any) {
-        if (err.response?.status === 401) {
-          localStorage.removeItem("accessToken");
-          window.location.href = `/login?redirect=dietitian-dashboard`;
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 401) {
+            localStorage.removeItem("accessToken");
+            window.location.href = `/login?redirect=dietitian-dashboard`;
+          } else {
+            setError("Failed to fetch profile. Please try again later.");
+          }
+        } else if (err instanceof Error) {
+          setError(err.message);
         } else {
-          setError("Failed to fetch profile. Please try again later.");
+          setError("An unknown error occurred. Please try again later.");
         }
       } finally {
         setLoading(false);

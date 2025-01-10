@@ -15,7 +15,10 @@ interface Profile {
   profile_picture?: string;
 }
 
-const fetchDietitianProfile = async (username: string): Promise<Profile | null> => {
+// Fetch dietitian profile data from the API
+const fetchDietitianProfile = async (
+  username: string
+): Promise<Profile | null> => {
   try {
     const response = await axios.get(
       `https://hazalkaynak.pythonanywhere.com/dietitian/${username}`
@@ -34,11 +37,15 @@ const fetchDietitianProfile = async (username: string): Promise<Profile | null> 
 };
 
 // Main Profile Page Component
-const DietitianProfilePage = async ({ params }: { params: { username: string } }) => {
-  const { username } = params;
+type Params = Promise<{ username: string }>;
+export default async function DietitianProfilePage({
+  params,
+}: {
+  params: Params;
+}) {
+  const { username } = await params; //Cutting Edge fix
   const profile = await fetchDietitianProfile(username);
 
-  // Redirect to 404 if profile is not found
   if (!profile) {
     return notFound();
   }
@@ -53,6 +60,7 @@ const DietitianProfilePage = async ({ params }: { params: { username: string } }
       </Typography>
 
       <Grid container spacing={4}>
+        {/* Profile Picture Section */}
         <Grid item xs={12} sm={4}>
           <Box
             sx={{
@@ -76,6 +84,7 @@ const DietitianProfilePage = async ({ params }: { params: { username: string } }
           </Box>
         </Grid>
 
+        {/* Profile Details Section */}
         <Grid item xs={12} sm={8}>
           <Typography variant="body1" sx={{ mb: 2 }}>
             <strong>Email:</strong> {profile.email}
@@ -94,6 +103,4 @@ const DietitianProfilePage = async ({ params }: { params: { username: string } }
       </Grid>
     </Box>
   );
-};
-
-export default DietitianProfilePage;
+}
