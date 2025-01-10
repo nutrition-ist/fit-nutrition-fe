@@ -1,20 +1,18 @@
-"use client";
-
 import React from "react";
 import {
   Box,
   Typography,
   Button,
   TextField,
-  Grid,
+  Grid, //deprecated
   Card,
   CardContent,
 } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
 
-import HeroImage from "../../public/images/cook.png";
-import TestimonialImage from "../../public/images/nitfut.jpg";
+import HeroImage from "Fi/cook.png";
+import TestimonialImage from "Fi/nitfut.jpg";
 
 const LandingPage: React.FC = () => {
   return (
@@ -38,7 +36,7 @@ const LandingPage: React.FC = () => {
               Home
             </Button>
           </Link>
-          <Link href="/dietitians" passHref>
+          <Link href="/dietitian" passHref>
             <Button variant="text" sx={{ mx: 1 }}>
               Dietitians
             </Button>

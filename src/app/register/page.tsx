@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
@@ -45,7 +44,10 @@ const RegisterPage: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      await axios.post("https://hazalkaynak.pythonanywhere.com/register/dietician/", formData);
+      await axios.post(
+        "https://hazalkaynak.pythonanywhere.com/register/dietician/",
+        formData
+      );
 
       setSuccessMessage("Dietitian registered successfully!");
       setFormData({
@@ -57,10 +59,14 @@ const RegisterPage: React.FC = () => {
         phone: "",
         address: "",
       });
-    } catch (err: any) {
-      setError(
-        err.response?.data?.detail || "An error occurred during registration."
-      );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error registering", err.message);
+        setError("Failed to Register, Please try again later.");
+      } else {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred. Please try again later.");
+      }
     }
   };
 
