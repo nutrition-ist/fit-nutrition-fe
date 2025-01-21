@@ -14,8 +14,6 @@ interface Profile {
   about_me: string;
   profile_picture?: string;
 }
-
-
 //Fetch all the Dietians then get their usernames for generating static path for the generateStaticParams function.
 const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
   try {
@@ -23,12 +21,10 @@ const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
       "https://hazalkaynak.pythonanywhere.com/dietitian/"
     );
 
-    if (response.data && Array.isArray(response.data.dietician_list)) {
-      return response.data.dietician_list.map(
-        (dietitian: { username: string }) => ({
-          username: dietitian.username,
-        })
-      );
+    if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results.map((dietitian: { username: string }) => ({
+        username: dietitian.username,
+      }));
     } else {
       console.error("Unexpected API response format.");
       return [];
@@ -38,7 +34,6 @@ const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
     return [];
   }
 };
-
 
 const fetchDietitianProfile = async (
   username: string
@@ -60,14 +55,13 @@ const fetchDietitianProfile = async (
   }
 };
 
-
 // Generate Static Params for Dynamic Route
-export const generateStaticParams = async () => {
+export async function generateStaticParams() {
   const dietitians = await fetchAllDietitians();
   return dietitians.map((dietitian) => ({
     username: dietitian.username,
   }));
-};
+}
 
 // Main Profile Page Component
 export default async function DietitianProfilePage({
@@ -82,7 +76,6 @@ export default async function DietitianProfilePage({
   if (!profile) {
     return notFound();
   }
-
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
       <Typography
