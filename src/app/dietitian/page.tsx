@@ -45,42 +45,46 @@ const Dietitians: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [prevPage, setPrevPage] = useState<string | null>(null);
 
   // Fetch dietitians from the API
-  useEffect(() => {
-    const fetchDietitians = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          "https://hazalkaynak.pythonanywhere.com/dietitian/"
-        );
+  const fetchDietitians = async (url: string) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(url);
 
-        if (response.data && Array.isArray(response.data.dietician_list)) {
-          setDietitians(response.data.dietician_list); // Store all dietitians
-          setFilteredDietitians(response.data.dietician_list); // Initially show all dietitians
-        } else {
-          throw new Error("Unexpected API response format.");
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("Error fetching dietitians:", err.message);
-          setError("Failed to fetch dietitians. Please try again later.");
-        } else {
-          console.error("Unexpected error:", err);
-          setError("An unexpected error occurred. Please try again later.");
-        }
-      } finally {
-        setLoading(false);
+      if (response.data && Array.isArray(response.data.results)) {
+        setDietitians(response.data.results); // Update the current page's data
+        setFilteredDietitians(response.data.results); // Filtered dietitians also update
+        setNextPage(response.data.next); // Set next page URL
+        setPrevPage(response.data.previous); // Set previous page URL
+      } else {
+        throw new Error("Unexpected API response format.");
       }
-    };
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching dietitians:", err.message);
+        setError("Failed to fetch dietitians. Please try again later.");
+      } else {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDietitians();
+  // Fetch initial page on component mount
+  useEffect(() => {
+    fetchDietitians("https://hazalkaynak.pythonanywhere.com/dietician/");
   }, []);
 
   /**
    * Handles search input changes to filter the list of dietitians.
-   * Updates the filteredDietitians state based on the query.
-
+   * Updates the `filteredDietitians` state based on the query.
+   *
    * - Converts the search input to lowercase for case-insensitive matching.
    * - Filters the list of dietitians based on whether their full name or qualifications match the query.
    * - Combines the first and last name of each dietitian for name matching.
@@ -100,7 +104,7 @@ const Dietitians: React.FC = () => {
         .toLowerCase();
 
       return (
-        fullName.includes(query) || 
+        fullName.includes(query) ||
         (qualifications && qualifications.includes(query))
       );
     });
@@ -108,9 +112,16 @@ const Dietitians: React.FC = () => {
     setFilteredDietitians(filtered);
   };
 
-  /**
-   * Render a message if no dietitians are found.
-   */
+  // Handle pagination
+  const handlePageChange = (url: string | null) => {
+    if (url) {
+      const page = new URL(url).searchParams.get("page");
+      if (page) setCurrentPage(Number(page));
+      fetchDietitians(url);
+    }
+  };
+
+  // Render loader
   if (loading) {
     return (
       <Box
@@ -126,7 +137,7 @@ const Dietitians: React.FC = () => {
     );
   }
 
-  // Render an error message if API call fails
+  // Render error message
   if (error) {
     return (
       <Box sx={{ textAlign: "center", mt: 5 }}>
@@ -135,7 +146,7 @@ const Dietitians: React.FC = () => {
     );
   }
 
-  // Render a message if no dietitians are found
+  // Render no dietitians found message
   if (dietitians.length === 0) {
     return (
       <Box sx={{ textAlign: "center", mt: 5 }}>
@@ -149,7 +160,6 @@ const Dietitians: React.FC = () => {
     <>
       <InitialNavbar />
       <Box sx={{ maxWidth: 1200, mx: "auto", mt: 5, px: 3 }}>
-        {/* Page Title */}
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
@@ -196,7 +206,6 @@ const Dietitians: React.FC = () => {
                   flexDirection: "column",
                 }}
               >
-                {/* Profile Picture */}
                 <Image
                   src={dietitian.profile_picture || placeholderimage}
                   alt={`${dietitian.first_name} ${dietitian.last_name}`}
@@ -209,12 +218,9 @@ const Dietitians: React.FC = () => {
                   }}
                 />
                 <CardContent>
-                  {/* Name */}
                   <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                     {dietitian.first_name} {dietitian.last_name}
                   </Typography>
-
-                  {/* Email */}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -222,8 +228,6 @@ const Dietitians: React.FC = () => {
                   >
                     <strong>Email:</strong> {dietitian.email}
                   </Typography>
-
-                  {/* Phone */}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -231,8 +235,6 @@ const Dietitians: React.FC = () => {
                   >
                     <strong>Phone:</strong> {dietitian.phone}
                   </Typography>
-
-                  {/* Address */}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -240,34 +242,26 @@ const Dietitians: React.FC = () => {
                   >
                     <strong>Address:</strong> {dietitian.address}
                   </Typography>
-
-                  {/* About Me */}
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>About Me:</strong>{" "}
                     {dietitian.about_me || "No information available."}
                   </Typography>
-
-                  {/* Qualifications */}
                   {dietitian.qualifications && (
                     <Stack
                       direction="row"
                       spacing={1}
                       sx={{ flexWrap: "wrap", mb: 2 }}
                     >
-                      {dietitian.qualifications.map(
-                        (qualification, index) => (
-                          <Chip
-                            key={index}
-                            label={qualification}
-                            color="primary"
-                            size="small"
-                          />
-                        )
-                      )}
+                      {dietitian.qualifications.map((qualification, index) => (
+                        <Chip
+                          key={index}
+                          label={qualification}
+                          color="primary"
+                          size="small"
+                        />
+                      ))}
                     </Stack>
                   )}
-
-                  {/* Social Media Links */}
                   <Box>
                     {dietitian.facebook && (
                       <Button
@@ -289,39 +283,7 @@ const Dietitians: React.FC = () => {
                         Instagram
                       </Button>
                     )}
-                    {dietitian.x_twitter && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.x_twitter}
-                        target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
-                      >
-                        Twitter
-                      </Button>
-                    )}
-                    {dietitian.youtube && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.youtube}
-                        target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
-                      >
-                        YouTube
-                      </Button>
-                    )}
-                    {dietitian.whatsapp && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.whatsapp}
-                        target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
-                      >
-                        WhatsApp
-                      </Button>
-                    )}
                   </Box>
-
-                  {/* View Profile Button */}
                   <Link href={`/dietitian/${dietitian.username}`} passHref>
                     <Button
                       variant="contained"
@@ -337,6 +299,23 @@ const Dietitians: React.FC = () => {
             </Grid>
           ))}
         </Grid>
+
+        {/* Pagination Controls */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
+          <Button
+            disabled={!prevPage}
+            onClick={() => handlePageChange(prevPage)}
+          >
+            Previous
+          </Button>
+          <Typography>Page {currentPage}</Typography>
+          <Button
+            disabled={!nextPage}
+            onClick={() => handlePageChange(nextPage)}
+          >
+            Next
+          </Button>
+        </Box>
       </Box>
     </>
   );
