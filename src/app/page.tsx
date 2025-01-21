@@ -13,46 +13,12 @@ import Link from "next/link";
 
 import HeroImage from "Fi/cook.png";
 import TestimonialImage from "Fi/nitfut.jpg";
+import InitialNavbar from "../components/InitialNavbar"
 
 const LandingPage: React.FC = () => {
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          px: 3,
-          py: 2,
-          borderBottom: "1px solid #e0e0e0",
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          Fit Nutrition
-        </Typography>
-        <Box>
-          <Link href="/" passHref>
-            <Button variant="text" sx={{ mx: 1 }}>
-              Home
-            </Button>
-          </Link>
-          <Link href="/dietitian" passHref>
-            <Button variant="text" sx={{ mx: 1 }}>
-              Dietitians
-            </Button>
-          </Link>
-          <Link href="/wip" passHref>
-            <Button variant="text" sx={{ mx: 1 }}>
-              Blog
-            </Button>
-          </Link>
-          <Link href="/dietitian-dashboard" passHref>
-            <Button variant="text" sx={{ mx: 1 }}>
-              Dietitian Panel
-            </Button>
-          </Link>
-        </Box>
-      </Box>
+     <InitialNavbar />
 
       <Box
         sx={{

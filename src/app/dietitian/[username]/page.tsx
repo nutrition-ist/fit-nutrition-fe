@@ -15,6 +15,7 @@ interface Profile {
   profile_picture?: string;
 }
 
+
 //Fetch all the Dietians then get their usernames for generating static path for the generateStaticParams function.
 const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
   try {
@@ -37,6 +38,7 @@ const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
     return [];
   }
 };
+
 
 const fetchDietitianProfile = async (
   username: string

@@ -1,8 +1,17 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next';
 
+/** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  // reactStrictMode: true,
-  // output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "hazalkaynak.pythonanywhere.com",
+        port: "",
+        pathname: "/media/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
