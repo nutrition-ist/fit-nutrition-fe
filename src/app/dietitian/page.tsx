@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -54,37 +54,40 @@ const Dietitians: React.FC = () => {
   const [prevPage, setPrevPage] = useState<string | null>(null);
 
   // Fetch dietitians from the API
-  const fetchDietitians = async (url: string) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(url, {
-        params: { page_size: pageSize }, // Pass page_size as a query parameter
-      });
+  const fetchDietitians = useCallback(
+    async (url: string) => {
+      try {
+        setLoading(true);
+        const response = await axios.get(url, {
+          params: { page_size: pageSize },
+        });
 
-      if (response.data && Array.isArray(response.data.results)) {
-        setDietitians(response.data.results);
-        setFilteredDietitians(response.data.results);
-        setNextPage(response.data.next);
-        setPrevPage(response.data.previous);
-      } else {
-        throw new Error("Unexpected API response format.");
+        if (response.data && Array.isArray(response.data.results)) {
+          setDietitians(response.data.results);
+          setFilteredDietitians(response.data.results);
+          setNextPage(response.data.next);
+          setPrevPage(response.data.previous);
+        } else {
+          throw new Error("Unexpected API response format.");
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error("Error fetching dietitians:", err.message);
+          setError("Failed to fetch dietitians. Please try again later.");
+        } else {
+          setError("An unexpected error occurred. Please try again later.");
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error("Error fetching dietitians:", err.message);
-        setError("Failed to fetch dietitians. Please try again later.");
-      } else {
-        setError("An unexpected error occurred. Please try again later.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [pageSize] // Add pageSize as a dependency
+  );
 
   // Fetch initial page on component mount
   useEffect(() => {
     fetchDietitians("https://hazalkaynak.pythonanywhere.com/dietician/");
-  }, [pageSize]);
+  }, [fetchDietitians]);
   /**
    * Handles search input changes to filter the list of dietitians.
    * Updates the `filteredDietitians` state based on the query.
@@ -244,8 +247,8 @@ const Dietitians: React.FC = () => {
                 <Image
                   src={dietitian.profile_picture || placeholderimage}
                   alt={`${dietitian.first_name} ${dietitian.last_name}`}
-                  width={400}
-                  height={250}
+                  width={372}
+                  height={372}
                   style={{
                     objectFit: "cover",
                     borderTopLeftRadius: "4px",
