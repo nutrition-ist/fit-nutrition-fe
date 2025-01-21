@@ -26,7 +26,7 @@ interface DietitianType {
   first_name: string;
   last_name: string;
   about_me?: string;
-  qualifications?: { qualifications: string[] };
+  qualifications: string[];
   phone: string;
   address: string;
   profile_picture: string | null;
@@ -77,29 +77,40 @@ const Dietitians: React.FC = () => {
     fetchDietitians();
   }, []);
 
-  // Handle search input
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value.toLowerCase(); // Convert input to lowercase
-    setSearch(query); // Update search state
+  /**
+   * Handles search input changes to filter the list of dietitians.
+   * Updates the filteredDietitians state based on the query.
 
-    // Filter dietitians based on the input query
+   * - Converts the search input to lowercase for case-insensitive matching.
+   * - Filters the list of dietitians based on whether their full name or qualifications match the query.
+   * - Combines the first and last name of each dietitian for name matching.
+   * - Joins all qualifications into a single string for qualification matching.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The search input change event.
+   */
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const query = event.target.value.toLowerCase();
+    setSearch(query);
+
     const filtered = dietitians.filter((dietitian) => {
       const fullName =
-        `${dietitian.first_name} ${dietitian.last_name}`.toLowerCase(); // Combine first and last name
-      const qualifications = dietitian.qualifications?.qualifications
+        `${dietitian.first_name} ${dietitian.last_name}`.toLowerCase();
+      const qualifications = dietitian.qualifications
         ?.join(" ") // Combine all qualifications into a single string
         .toLowerCase();
 
       return (
-        fullName.includes(query) || // Check if name matches query
-        (qualifications && qualifications.includes(query)) // Check if qualifications match query
+        fullName.includes(query) || 
+        (qualifications && qualifications.includes(query))
       );
     });
 
-    setFilteredDietitians(filtered); // Update the filtered list
+    setFilteredDietitians(filtered);
   };
 
-  // Render a loading spinner while data is being fetched
+  /**
+   * Render a message if no dietitians are found.
+   */
   if (loading) {
     return (
       <Box
@@ -161,10 +172,10 @@ const Dietitians: React.FC = () => {
               boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
               "& .MuiOutlinedInput-root": {
                 "& fieldset": {
-                  borderColor: "#4caf50", 
+                  borderColor: "#4caf50",
                 },
                 "&:hover fieldset": {
-                  borderColor: "#388e3c", 
+                  borderColor: "#388e3c",
                 },
                 "&.Mui-focused fieldset": {
                   borderColor: "#2e7d32",
@@ -237,13 +248,13 @@ const Dietitians: React.FC = () => {
                   </Typography>
 
                   {/* Qualifications */}
-                  {dietitian.qualifications?.qualifications && (
+                  {dietitian.qualifications && (
                     <Stack
                       direction="row"
                       spacing={1}
                       sx={{ flexWrap: "wrap", mb: 2 }}
                     >
-                      {dietitian.qualifications.qualifications.map(
+                      {dietitian.qualifications.map(
                         (qualification, index) => (
                           <Chip
                             key={index}
