@@ -12,6 +12,9 @@ import {
   Chip,
   Stack,
   TextField,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
 } from "@mui/material";
 import axios from "axios";
 import Link from "next/link";
@@ -46,6 +49,7 @@ const Dietitians: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6); // Default page size;
   const [nextPage, setNextPage] = useState<string | null>(null);
   const [prevPage, setPrevPage] = useState<string | null>(null);
 
@@ -53,22 +57,23 @@ const Dietitians: React.FC = () => {
   const fetchDietitians = async (url: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        params: { page_size: pageSize }, // Pass page_size as a query parameter
+      });
 
       if (response.data && Array.isArray(response.data.results)) {
-        setDietitians(response.data.results); // Update the current page's data
-        setFilteredDietitians(response.data.results); // Filtered dietitians also update
-        setNextPage(response.data.next); // Set next page URL
-        setPrevPage(response.data.previous); // Set previous page URL
+        setDietitians(response.data.results);
+        setFilteredDietitians(response.data.results);
+        setNextPage(response.data.next);
+        setPrevPage(response.data.previous);
       } else {
         throw new Error("Unexpected API response format.");
       }
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof Error) {
         console.error("Error fetching dietitians:", err.message);
         setError("Failed to fetch dietitians. Please try again later.");
       } else {
-        console.error("Unexpected error:", err);
         setError("An unexpected error occurred. Please try again later.");
       }
     } finally {
@@ -79,8 +84,7 @@ const Dietitians: React.FC = () => {
   // Fetch initial page on component mount
   useEffect(() => {
     fetchDietitians("https://hazalkaynak.pythonanywhere.com/dietician/");
-  }, []);
-
+  }, [pageSize]);
   /**
    * Handles search input changes to filter the list of dietitians.
    * Updates the `filteredDietitians` state based on the query.
@@ -115,12 +119,21 @@ const Dietitians: React.FC = () => {
   // Handle pagination
   const handlePageChange = (url: string | null) => {
     if (url) {
-      const page = new URL(url).searchParams.get("page");
-      if (page) setCurrentPage(Number(page));
+      // Extract the page number from the URL
+      const urlParams = new URL(url);
+      const page = urlParams.searchParams.get("page");
+
+      if (page) {
+        setCurrentPage(Number(page));
+      }
+
       fetchDietitians(url);
     }
   };
-
+  const handlePageSizeChange = (event: SelectChangeEvent<number>) => {
+    setPageSize(Number(event.target.value));
+    setCurrentPage(1);
+  };
   // Render loader
   if (loading) {
     return (
@@ -166,9 +179,17 @@ const Dietitians: React.FC = () => {
         >
           Dietitians List
         </Typography>
-
-        {/* Search Bar */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+        {/* Search bar and pagination */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 2,
+            mb: 4,
+          }}
+        >
+          {/* Search Bar */}
           <TextField
             value={search}
             onChange={handleSearch}
@@ -193,7 +214,21 @@ const Dietitians: React.FC = () => {
               },
             }}
           />
+          {/* Page Size Selector */}
+          <Select
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            displayEmpty
+            sx={{ mr: 2 }}
+          >
+            <MenuItem value={6}>6 per page</MenuItem>
+            <MenuItem value={12}>12 per page</MenuItem>
+            <MenuItem value={24}>24 per page</MenuItem>
+            <MenuItem value={48}>48 per page</MenuItem>
+          </Select>
         </Box>
+
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}></Box>
 
         {/* Render Dietitian Cards */}
         <Grid container spacing={4}>
@@ -281,6 +316,36 @@ const Dietitians: React.FC = () => {
                         sx={{ mr: 1, mb: 1 }}
                       >
                         Instagram
+                      </Button>
+                    )}
+                    {dietitian.x_twitter && (
+                      <Button
+                        variant="outlined"
+                        href={dietitian.x_twitter}
+                        target="_blank"
+                        sx={{ mr: 1, mb: 1 }}
+                      >
+                        Twitter
+                      </Button>
+                    )}
+                    {dietitian.youtube && (
+                      <Button
+                        variant="outlined"
+                        href={dietitian.youtube}
+                        target="_blank"
+                        sx={{ mr: 1, mb: 1 }}
+                      >
+                        YouTube
+                      </Button>
+                    )}
+                    {dietitian.whatsapp && (
+                      <Button
+                        variant="outlined"
+                        href={dietitian.whatsapp}
+                        target="_blank"
+                        sx={{ mr: 1, mb: 1 }}
+                      >
+                        WhatsApp
                       </Button>
                     )}
                   </Box>
