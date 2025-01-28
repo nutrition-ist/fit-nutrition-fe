@@ -244,9 +244,9 @@ const Dietitians: React.FC = () => {
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  flexGrow: 1, // Makes cards dynamically expand
-                  minWidth: "300px", // Ensures cards don't get too small
-                  maxWidth: "100%", // Allows cards to use available space
+                  flexGrow: 1, 
+                  minWidth: "300px", 
+                  maxWidth: "100%", 
                 }}
               >
                 <Image
