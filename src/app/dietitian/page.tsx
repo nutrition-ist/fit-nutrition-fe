@@ -20,7 +20,7 @@ import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
 import placeholderimage from "../../../public/images/placeholder.jpg";
-import InitialNavbar from "../../components/InitialNavbar"
+import InitialNavbar from "../../components/InitialNavbar";
 
 interface DietitianType {
   id: number;
@@ -49,7 +49,7 @@ const Dietitians: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6); // Default page size;
+  const [pageSize, setPageSize] = useState(8); // Default page size;
   const [nextPage, setNextPage] = useState<string | null>(null);
   const [prevPage, setPrevPage] = useState<string | null>(null);
 
@@ -175,13 +175,14 @@ const Dietitians: React.FC = () => {
   return (
     <>
       <InitialNavbar />
-      <Box sx={{ maxWidth: 1200, mx: "auto", mt: 5, px: 3 }}>
+      <Box sx={{ maxWidth: "1400px", mx: "auto", mt: 5, px: 3 }}>
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
         >
           Dietitians List
         </Typography>
+
         {/* Search bar and pagination */}
         <Box
           sx={{
@@ -217,6 +218,7 @@ const Dietitians: React.FC = () => {
               },
             }}
           />
+
           {/* Page Size Selector */}
           <Select
             value={pageSize}
@@ -224,9 +226,9 @@ const Dietitians: React.FC = () => {
             displayEmpty
             sx={{ mr: 2 }}
           >
-            <MenuItem value={6}>6 per page</MenuItem>
-            <MenuItem value={12}>12 per page</MenuItem>
-            <MenuItem value={24}>24 per page</MenuItem>
+            <MenuItem value={8}>8 per page</MenuItem>
+            <MenuItem value={16}>16 per page</MenuItem>
+            <MenuItem value={32}>32 per page</MenuItem>
             <MenuItem value={48}>48 per page</MenuItem>
           </Select>
         </Box>
@@ -234,56 +236,54 @@ const Dietitians: React.FC = () => {
         <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}></Box>
 
         {/* Render Dietitian Cards */}
-        <Grid container spacing={4}>
+        <Grid container spacing={3} justifyContent="center">
           {filteredDietitians.map((dietitian) => (
-            <Grid item xs={12} sm={6} lg={4} key={dietitian.id}>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
               <Card
                 sx={{
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  flexGrow: 1, 
+                  minWidth: "300px", 
+                  maxWidth: "100%", 
                 }}
               >
                 <Image
-                  src={dietitian.profile_picture || placeholderimage}
+                  src={
+                    dietitian.profile_picture
+                      ? `https://hazalkaynak.pythonanywhere.com/${dietitian.profile_picture}`
+                      : placeholderimage
+                  }
                   alt={`${dietitian.first_name} ${dietitian.last_name}`}
-                  width={372}
-                  height={372}
+                  layout="responsive"
+                  width={1}
+                  height={1}
+                  unoptimized
                   style={{
                     objectFit: "cover",
                     borderTopLeftRadius: "4px",
                     borderTopRightRadius: "4px",
                   }}
                 />
-                <CardContent>
+                <CardContent sx={{ padding: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                     {dietitian.first_name} {dietitian.last_name}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mb: 1 }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Email:</strong> {dietitian.email}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mb: 1 }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Phone:</strong> {dietitian.phone}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mb: 1 }}
-                  >
+                  <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Address:</strong> {dietitian.address}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>About Me:</strong>{" "}
                     {dietitian.about_me || "No information available."}
                   </Typography>
+
                   {dietitian.qualifications && (
                     <Stack
                       direction="row"
@@ -300,6 +300,7 @@ const Dietitians: React.FC = () => {
                       ))}
                     </Stack>
                   )}
+
                   <Box>
                     {dietitian.facebook && (
                       <Button
@@ -352,6 +353,7 @@ const Dietitians: React.FC = () => {
                       </Button>
                     )}
                   </Box>
+
                   <Link href={`/dietitian/${dietitian.username}`} passHref>
                     <Button
                       variant="contained"

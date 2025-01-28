@@ -97,10 +97,15 @@ export default async function DietitianProfilePage({
             }}
           >
             <Image
-              src={profile.profile_picture || placeholderimage}
+              src={
+                profile.profile_picture
+                  ? `https://hazalkaynak.pythonanywhere.com/${profile.profile_picture}`
+                  : placeholderimage
+              }
               alt="Profile"
-              width={150}
-              height={150}
+              width={180}
+              height={180}
+              unoptimized
               style={{
                 borderRadius: "50%",
                 objectFit: "cover",

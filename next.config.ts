@@ -1,9 +1,4 @@
-import { NextConfig } from "next";
-
-/** @type {import('next').NextConfig} */
-const nextConfig: NextConfig = {
-  // Image configuration
-
+const nextConfig = {
 
   images: {
     remotePatterns: [
@@ -11,7 +6,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "hazalkaynak.pythonanywhere.com",
         port: "",
-        pathname: "/media/**",
+        pathname: "/media/**", // Match all images under /media/
       },
     ],
   },
@@ -19,4 +14,5 @@ const nextConfig: NextConfig = {
 
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+
