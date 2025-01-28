@@ -1,4 +1,5 @@
 const nextConfig = {
+
   images: {
     remotePatterns: [
       {
@@ -9,6 +10,9 @@ const nextConfig = {
       },
     ],
   },
+  
+
 };
 
 module.exports = nextConfig;
+
