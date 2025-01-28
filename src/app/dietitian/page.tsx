@@ -175,7 +175,7 @@ const Dietitians: React.FC = () => {
   return (
     <>
       <InitialNavbar />
-      <Box sx={{ maxWidth: 1200, mx: "auto", mt: 5, px: 3 }}>
+      <Box sx={{ maxWidth: "1400px", mx: "auto", mt: 5, px: 3 }}>
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
@@ -228,23 +228,25 @@ const Dietitians: React.FC = () => {
           >
             <MenuItem value={8}>8 per page</MenuItem>
             <MenuItem value={16}>16 per page</MenuItem>
-            <MenuItem value={32}>33 per page</MenuItem>
-            <MenuItem value={49}>40 per page</MenuItem>
+            <MenuItem value={32}>32 per page</MenuItem>
+            <MenuItem value={48}>48 per page</MenuItem>
           </Select>
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}></Box>
 
         {/* Render Dietitian Cards */}
-        <Grid container spacing={2} justifyContent="center">
+        <Grid container spacing={3} justifyContent="center">
           {filteredDietitians.map((dietitian) => (
-            <Grid item xs={12} sm={6} md={4} lg={2.8} key={dietitian.id}>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
               <Card
                 sx={{
                   height: "100%",
-                  width: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  flexGrow: 1, // Makes cards dynamically expand
+                  minWidth: "300px", // Ensures cards don't get too small
+                  maxWidth: "100%", // Allows cards to use available space
                 }}
               >
                 <Image
@@ -254,8 +256,9 @@ const Dietitians: React.FC = () => {
                       : placeholderimage
                   }
                   alt={`${dietitian.first_name} ${dietitian.last_name}`}
-                  width={280}
-                  height={280}
+                  layout="responsive"
+                  width={1}
+                  height={1}
                   unoptimized
                   style={{
                     objectFit: "cover",
@@ -263,7 +266,7 @@ const Dietitians: React.FC = () => {
                     borderTopRightRadius: "4px",
                   }}
                 />
-                <CardContent>
+                <CardContent sx={{ padding: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                     {dietitian.first_name} {dietitian.last_name}
                   </Typography>
