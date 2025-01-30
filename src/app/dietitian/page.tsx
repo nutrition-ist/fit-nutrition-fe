@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -11,13 +11,8 @@ import {
   Button,
   Chip,
   Stack,
-  TextField,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
 } from "@mui/material";
 import axios from "axios";
-import Link from "next/link";
 import Image from "next/image";
 import placeholderimage from "../../../public/images/placeholder.jpg";
 import InitialNavbar from "../../components/InitialNavbar";
@@ -42,116 +37,70 @@ interface DietitianType {
 
 const Dietitians: React.FC = () => {
   const [dietitians, setDietitians] = useState<DietitianType[]>([]);
-  const [filteredDietitians, setFilteredDietitians] = useState<DietitianType[]>(
-    []
-  );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8); // Default page size;
-  const [nextPage, setNextPage] = useState<string | null>(null);
-  const [prevPage, setPrevPage] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch dietitians from the API
-  const fetchDietitians = useCallback(
-    async (url: string) => {
-      try {
-        setLoading(true);
-        const response = await axios.get(url, {
-          params: { page_size: pageSize },
+  // Fetch dietitians with dynamic page number
+  const fetchDietitians = async (pageNumber: number) => {
+    if (!hasMore || loading) return; // Prevent multiple API calls
+
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${pageNumber}&page_size=8` //without the pagesize, site will look weird.
+      );
+
+      if (response.data && Array.isArray(response.data.results)) {
+        setDietitians((prev) => {
+          const newData = response.data.results.filter(
+            (newItem: DietitianType) =>
+              !prev.some((existingItem) => existingItem.id === newItem.id)
+          );
+          return [...prev, ...newData];
         });
 
-        if (response.data && Array.isArray(response.data.results)) {
-          setDietitians(response.data.results);
-          setFilteredDietitians(response.data.results);
-          setNextPage(response.data.next);
-          setPrevPage(response.data.previous);
-        } else {
-          throw new Error("Unexpected API response format.");
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error("Error fetching dietitians:", err.message);
-          setError("Failed to fetch dietitians. Please try again later.");
-        } else {
-          setError("An unexpected error occurred. Please try again later.");
-        }
-      } finally {
-        setLoading(false);
+        setHasMore(!!response.data.next);
+      } else {
+        setHasMore(false);
       }
-    },
-    [pageSize] // Add pageSize as a dependency
-  );
-
-  // Fetch initial page on component mount
-  useEffect(() => {
-    fetchDietitians("https://hazalkaynak.pythonanywhere.com/dietician/");
-  }, [fetchDietitians]);
-  /**
-   * Handles search input changes to filter the list of dietitians.
-   * Updates the `filteredDietitians` state based on the query.
-   *
-   * - Converts the search input to lowercase for case-insensitive matching.
-   * - Filters the list of dietitians based on whether their full name or qualifications match the query.
-   * - Combines the first and last name of each dietitian for name matching.
-   * - Joins all qualifications into a single string for qualification matching.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The search input change event.
-   */
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value.toLowerCase();
-    setSearch(query);
-
-    const filtered = dietitians.filter((dietitian) => {
-      const fullName =
-        `${dietitian.first_name} ${dietitian.last_name}`.toLowerCase();
-      const qualifications = dietitian.qualifications
-        ?.join(" ") // Combine all qualifications into a single string
-        .toLowerCase();
-
-      return (
-        fullName.includes(query) ||
-        (qualifications && qualifications.includes(query))
-      );
-    });
-
-    setFilteredDietitians(filtered);
-  };
-
-  // Handle pagination
-  const handlePageChange = (url: string | null) => {
-    if (url) {
-      // Extract the page number from the URL
-      const urlParams = new URL(url);
-      const page = urlParams.searchParams.get("page");
-
-      if (page) {
-        setCurrentPage(Number(page));
-      }
-
-      fetchDietitians(url);
+    } catch (err) {
+      console.error("Error fetching dietitians:", err);
+      setError("Failed to fetch dietitians. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
-  const handlePageSizeChange = (event: SelectChangeEvent<number>) => {
-    setPageSize(Number(event.target.value));
-    setCurrentPage(1);
-  };
-  // Render loader
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
+
+  // Fetch first batch on mount
+  useEffect(() => {
+    fetchDietitians(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // eslint want's me to add fetchDietitians here but doing so will cause infinte loops.
+
+  // Setup Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { threshold: 1.0 }
     );
-  }
+
+    if (loaderRef.current) observer.observe(loaderRef.current);
+
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
+
+  // Fetch new data when `page` changes
+  useEffect(() => {
+    fetchDietitians(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]); //again will cause infinite loop
 
   // Render error message
   if (error) {
@@ -162,16 +111,6 @@ const Dietitians: React.FC = () => {
     );
   }
 
-  // Render no dietitians found message
-  if (dietitians.length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 5 }}>
-        <Typography>No dietitians found.</Typography>
-      </Box>
-    );
-  }
-
-  // Main component render
   return (
     <>
       <InitialNavbar />
@@ -183,70 +122,18 @@ const Dietitians: React.FC = () => {
           Dietitians List
         </Typography>
 
-        {/* Search bar and pagination */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 2,
-            mb: 4,
-          }}
-        >
-          {/* Search Bar */}
-          <TextField
-            value={search}
-            onChange={handleSearch}
-            variant="outlined"
-            placeholder="Search by name or qualifications"
-            sx={{
-              width: "100%",
-              maxWidth: 500,
-              backgroundColor: "white",
-              borderRadius: "8px",
-              boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#4caf50",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#388e3c",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#2e7d32",
-                },
-              },
-            }}
-          />
-
-          {/* Page Size Selector */}
-          <Select
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            displayEmpty
-            sx={{ mr: 2 }}
-          >
-            <MenuItem value={8}>8 per page</MenuItem>
-            <MenuItem value={16}>16 per page</MenuItem>
-            <MenuItem value={32}>32 per page</MenuItem>
-            <MenuItem value={48}>48 per page</MenuItem>
-          </Select>
-        </Box>
-
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}></Box>
-
         {/* Render Dietitian Cards */}
         <Grid container spacing={3} justifyContent="center">
-          {filteredDietitians.map((dietitian) => (
+          {dietitians.map((dietitian) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
               <Card
                 sx={{
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  flexGrow: 1, 
-                  minWidth: "300px", 
-                  maxWidth: "100%", 
+                  flexGrow: 1,
+                  minWidth: "300px",
+                  maxWidth: "100%",
                 }}
               >
                 <Image
@@ -301,13 +188,20 @@ const Dietitians: React.FC = () => {
                     </Stack>
                   )}
 
-                  <Box>
+                  {/* Social Media Links */}
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    justifyContent="center"
+                    mb={2}
+                  >
                     {dietitian.facebook && (
                       <Button
                         variant="outlined"
                         href={dietitian.facebook}
                         target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
+                        size="small"
                       >
                         Facebook
                       </Button>
@@ -317,7 +211,7 @@ const Dietitians: React.FC = () => {
                         variant="outlined"
                         href={dietitian.instagram}
                         target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
+                        size="small"
                       >
                         Instagram
                       </Button>
@@ -327,7 +221,7 @@ const Dietitians: React.FC = () => {
                         variant="outlined"
                         href={dietitian.x_twitter}
                         target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
+                        size="small"
                       >
                         Twitter
                       </Button>
@@ -337,7 +231,7 @@ const Dietitians: React.FC = () => {
                         variant="outlined"
                         href={dietitian.youtube}
                         target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
+                        size="small"
                       >
                         YouTube
                       </Button>
@@ -345,46 +239,36 @@ const Dietitians: React.FC = () => {
                     {dietitian.whatsapp && (
                       <Button
                         variant="outlined"
-                        href={dietitian.whatsapp}
+                        href={`https://wa.me/${dietitian.whatsapp}`}
                         target="_blank"
-                        sx={{ mr: 1, mb: 1 }}
+                        size="small"
                       >
                         WhatsApp
                       </Button>
                     )}
-                  </Box>
+                  </Stack>
 
-                  <Link href={`/dietitian/${dietitian.username}`} passHref>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    >
-                      View Profile
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    href={`/dietitian/${dietitian.username}`}
+                    sx={{ mt: 2 }}
+                  >
+                    View Profile
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
 
-        {/* Pagination Controls */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
-          <Button
-            disabled={!prevPage}
-            onClick={() => handlePageChange(prevPage)}
-          >
-            Previous
-          </Button>
-          <Typography>Page {currentPage}</Typography>
-          <Button
-            disabled={!nextPage}
-            onClick={() => handlePageChange(nextPage)}
-          >
-            Next
-          </Button>
+        {/* Loader for Infinite Scroll */}
+        <Box
+          ref={loaderRef}
+          sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+        >
+          {loading && <CircularProgress />}
         </Box>
       </Box>
     </>
