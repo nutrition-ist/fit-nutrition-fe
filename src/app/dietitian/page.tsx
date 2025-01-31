@@ -40,31 +40,47 @@ const Dietitians: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1); //
   const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement | null>(null);
+  const [hasPrev, setHasPrev] = useState(false); // Initially, there's no previous data thereforee false. 
 
-  // Fetch dietitians with dynamic page number
+  const bottomLoaderRef = useRef<HTMLDivElement | null>(null);
+  const topLoaderRef = useRef<HTMLDivElement | null>(null);
+
+  const MAX_ITEMS = 16;
   const fetchDietitians = async (pageNumber: number) => {
-    if (!hasMore || loading) return; // Prevent multiple API calls
+    if (loading) return;
 
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${pageNumber}&page_size=8` //without the pagesize, site will look weird.
+        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${pageNumber}&page_size=16`
       );
 
       if (response.data && Array.isArray(response.data.results)) {
         setDietitians((prev) => {
           const newData = response.data.results.filter(
             (newItem: DietitianType) =>
-              !prev.some((existingItem) => existingItem.id === newItem.id)
+              !prev.some((existing) => existing.id === newItem.id)
           );
-          return [...prev, ...newData];
+
+          let updatedList;
+          if (pageNumber > pageRef.current) {
+            // Scrolling Down
+            updatedList = [...prev, ...newData].slice(-MAX_ITEMS);
+          } else {
+            //  Scrolling Up
+            updatedList = [...newData, ...prev].slice(0, MAX_ITEMS);
+          }
+
+          return updatedList;
         });
 
         setHasMore(!!response.data.next);
+        setHasPrev(!!response.data.previous);
       } else {
         setHasMore(false);
+        setHasPrev(false);
       }
     } catch (err) {
       console.error("Error fetching dietitians:", err);
@@ -74,33 +90,51 @@ const Dietitians: React.FC = () => {
     }
   };
 
-  // Fetch first batch on mount
-  useEffect(() => {
-    fetchDietitians(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // eslint want's me to add fetchDietitians here but doing so will cause infinte loops.
-
-  // Setup Intersection Observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((prevPage) => prevPage + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (loaderRef.current) observer.observe(loaderRef.current);
-
-    return () => observer.disconnect();
-  }, [hasMore, loading]);
-
-  // Fetch new data when `page` changes
+  // Initial fetch
   useEffect(() => {
     fetchDietitians(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); //again will cause infinite loop
+  }, []); // eslint want's me to add fetchDietitians here but doing so will cause infinte loops.
+
+  // Load next page when reaching bottom
+  useEffect(() => {
+    if (!bottomLoaderRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore) {
+          setPage((prev) => prev + 1);
+          pageRef.current += 1;
+          fetchDietitians(pageRef.current);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(bottomLoaderRef.current);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loading, dietitians.length]); //again will cause infinite loop
+
+  //  Load previous pages when scrolling up
+  useEffect(() => {
+    if (!topLoaderRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasPrev) {
+          setPage((prev) => Math.max(1, prev - 1));
+          pageRef.current = Math.max(1, pageRef.current - 1);
+          fetchDietitians(pageRef.current);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(topLoaderRef.current);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPrev, loading, dietitians.length]); //again will cause infinite loop
 
   // Render error message
   if (error) {
@@ -115,6 +149,8 @@ const Dietitians: React.FC = () => {
     <>
       <InitialNavbar />
       <Box sx={{ maxWidth: "1400px", mx: "auto", mt: 5, px: 3 }}>
+        <Box ref={topLoaderRef} sx={{ height: 10 }} />
+
         <Typography
           variant="h4"
           sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
@@ -122,7 +158,6 @@ const Dietitians: React.FC = () => {
           Dietitians List
         </Typography>
 
-        {/* Render Dietitian Cards */}
         <Grid container spacing={3} justifyContent="center">
           {dietitians.map((dietitian) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
@@ -132,8 +167,7 @@ const Dietitians: React.FC = () => {
                   display: "flex",
                   flexDirection: "column",
                   flexGrow: 1,
-                  minWidth: "300px",
-                  maxWidth: "100%",
+                  minHeight: 400,
                 }}
               >
                 <Image
@@ -171,6 +205,7 @@ const Dietitians: React.FC = () => {
                     {dietitian.about_me || "No information available."}
                   </Typography>
 
+                  {/* Qualifications */}
                   {dietitian.qualifications && (
                     <Stack
                       direction="row"
@@ -263,10 +298,9 @@ const Dietitians: React.FC = () => {
           ))}
         </Grid>
 
-        {/* Loader for Infinite Scroll */}
         <Box
-          ref={loaderRef}
-          sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+          ref={bottomLoaderRef}
+          sx={{ display: "flex", justifyContent: "center", mt: 4, height: 10 }}
         >
           {loading && <CircularProgress />}
         </Box>
