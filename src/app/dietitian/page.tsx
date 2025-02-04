@@ -53,8 +53,9 @@ const Dietitians: React.FC = () => {
 
     try {
       setLoading(true);
+      pageRef.current = pageNumber
       const response = await axios.get(
-        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${pageNumber}&page_size=16`
+        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${pageNumber}&page_size=8`
       );
 
       if (response.data && Array.isArray(response.data.results)) {
@@ -65,14 +66,26 @@ const Dietitians: React.FC = () => {
           );
 
           let updatedList;
-          if (pageNumber > pageRef.current) {
+          console.log("Page number:" ,pageNumber,pageRef.current);
+          
+          if (pageNumber > pageRef.current -1) {
             // Scrolling Down
             updatedList = [...prev, ...newData].slice(-MAX_ITEMS);
+            console.log("bana giren var");
+            
+            // setTimeout(()=>{      
+            //   window.scrollTo({
+            //     top: window.innerHeight /4,
+            //     behavior: "smooth",
+            //   });
+            // }, 10)
+
           } else {
             //  Scrolling Up
             updatedList = [...newData, ...prev].slice(0, MAX_ITEMS);
           }
-
+          console.log("max items:",MAX_ITEMS);
+          
           return updatedList;
         });
 
@@ -148,7 +161,7 @@ const Dietitians: React.FC = () => {
   return (
     <>
       <InitialNavbar />
-      <Box sx={{ maxWidth: "1400px", mx: "auto", mt: 5, px: 3 }}>
+      <Box sx={{ maxWidth: "1400px", mx: "auto", mt: 5, px: 3, minHeight: "100vh",overflowX:"hidden",scrollBehavior:"smooth"}}>
         <Box ref={topLoaderRef} sx={{ height: 10 }} />
 
         <Typography
