@@ -12,29 +12,30 @@ import {
   List,
   ListItem,
   ListItemText,
-  Link as MuiLink,
+  Button,
+  Stack,
 } from "@mui/material";
 import Navbar from "../../components/Navbar";
 import Image from "next/image";
 import axios from "axios";
 
 interface DietitianDashboardData {
-  dietician: {
+  dietitian: {
     id: number;
     username: string;
     email: string;
     first_name: string;
     last_name: string;
-    about_me: string;
-    qualifications: { qualifications: string[] };
+    about_me?: string;
+    qualifications: string[];
     phone: string;
     address: string;
     profile_picture: string | null;
-    facebook: string;
-    instagram: string;
-    x_twitter: string;
-    youtube: string;
-    whatsapp: string;
+    facebook: string | null;
+    instagram: string | null;
+    x_twitter: string | null;
+    youtube: string | null;
+    whatsapp: string | null;
   };
   patients_list: {
     id: number;
@@ -75,10 +76,21 @@ const DietitianDashboard: React.FC = () => {
 
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/dietitian/me/`, {
+        const response = await axios.get(`${apiUrl}/dietitian/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setProfile(response.data);
+        if (response.data.results.length === 0) {
+          setError("No dietitian profile found.");
+        } else {
+          console.log(response.data.results[0]);
+
+          setProfile({
+            dietitian: response.data.results[0],
+            patients_list: [],
+            appointment_list: [],
+          });
+        }
+        
       } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 401) {
@@ -145,27 +157,25 @@ const DietitianDashboard: React.FC = () => {
         >
           <Card sx={{ padding: 3, textAlign: "center" }}>
             <Image
-              src={
-                profile.dietician.profile_picture ||
-                "/images/default-profile.jpg"
-              }
+              src={"/images/default-profile.jpg"}
               alt="Dietitian Picture"
               width={100}
               height={100}
+              unoptimized
               style={{
                 borderRadius: "50%",
                 marginBottom: "16px",
               }}
             />
             <Typography variant="h6">
-              {profile.dietician.first_name} {profile.dietician.last_name}
+              {profile.dietitian.first_name} {profile.dietitian.last_name}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 1 }}>
-              {profile.dietician.about_me}
+              {profile.dietitian.about_me}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 1 }}>
-              {profile.dietician.qualifications?.qualifications?.length
-                ? profile.dietician.qualifications.qualifications.join(", ")
+              {profile.dietitian.qualifications?.length
+                ? profile.dietitian.qualifications.join(", ")
                 : "No qualifications available."}
             </Typography>
           </Card>
@@ -232,49 +242,69 @@ const DietitianDashboard: React.FC = () => {
                   Contact & Socials
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  Phone: {profile.dietician.phone}
+                  Phone: {profile.dietitian.phone}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  Address: {profile.dietician.address}
+                  Address: {profile.dietitian.address}
                 </Typography>
-                <List>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.facebook}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Facebook
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.instagram}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Instagram
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.x_twitter}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Twitter
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.youtube}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      YouTube
-                    </MuiLink>
-                  </ListItem>
-                </List>
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    justifyContent="center"
+                    mb={2}
+                  >
+                    {profile.dietitian.facebook && (
+                      <Button
+                        variant="outlined"
+                        href={profile.dietitian.facebook}
+                        target="_blank"
+                        size="small"
+                      >
+                        Facebook
+                      </Button>
+                    )}
+                    {profile.dietitian.instagram && (
+                      <Button
+                        variant="outlined"
+                        href={profile.dietitian.instagram}
+                        target="_blank"
+                        size="small"
+                      >
+                        Instagram
+                      </Button>
+                    )}
+                    {profile.dietitian.x_twitter && (
+                      <Button
+                        variant="outlined"
+                        href={profile.dietitian.x_twitter}
+                        target="_blank"
+                        size="small"
+                      >
+                        Twitter
+                      </Button>
+                    )}
+                    {profile.dietitian.youtube && (
+                      <Button
+                        variant="outlined"
+                        href={profile.dietitian.youtube}
+                        target="_blank"
+                        size="small"
+                      >
+                        YouTube
+                      </Button>
+                    )}
+                    {profile.dietitian.whatsapp && (
+                      <Button
+                        variant="outlined"
+                        href={`https://wa.me/${profile.dietitian.whatsapp}`}
+                        target="_blank"
+                        size="small"
+                      >
+                        WhatsApp
+                      </Button>
+                    )}
+                  </Stack>
               </Box>
             )}
           </Box>
