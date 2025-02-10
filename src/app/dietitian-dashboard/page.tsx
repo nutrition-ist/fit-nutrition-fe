@@ -83,10 +83,10 @@ const DietitianDashboard: React.FC = () => {
         const response = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        
         setProfile({
-          dietitian: response.data,
-          patients_list: [],
+          dietitian: response.data.dietician,
+          patients_list: response.data.patients_list,
           appointment_list: [],
         });
       } catch (err: unknown) {
@@ -125,6 +125,12 @@ const DietitianDashboard: React.FC = () => {
   };
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => setOpenDialog(false);
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("username");
+    window.location.href = "/login";
+  };
 
   if (loading) {
     return (
@@ -155,7 +161,7 @@ const DietitianDashboard: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+    <Navbar dietitianName={profile?.dietitian.first_name || null} onLogout={handleLogout} />
       <Grid container sx={{ height: "100vh" }}>
         {/* Left Sidebar: Profile Section */}
         <Grid
