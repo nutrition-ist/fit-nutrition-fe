@@ -56,6 +56,8 @@ const LoginPage: React.FC = () => {
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
 
+      localStorage.setItem("username", formData.username); 
+
       setSuccessMessage("Login successful!");
 
 

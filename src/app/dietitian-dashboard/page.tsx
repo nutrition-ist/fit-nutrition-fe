@@ -125,12 +125,7 @@ const DietitianDashboard: React.FC = () => {
   };
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => setOpenDialog(false);
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("username");
-    window.location.href = "/login";
-  };
+  
 
   if (loading) {
     return (
@@ -161,7 +156,7 @@ const DietitianDashboard: React.FC = () => {
 
   return (
     <>
-    <Navbar dietitianName={profile?.dietitian.first_name || null} onLogout={handleLogout} />
+    <Navbar />
       <Grid container sx={{ height: "100vh" }}>
         {/* Left Sidebar: Profile Section */}
         <Grid

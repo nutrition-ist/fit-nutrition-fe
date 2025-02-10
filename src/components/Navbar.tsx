@@ -1,17 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AppBar, Toolbar, Box, Button, Avatar, Typography } from "@mui/material";
 import nitImage from "../../public/images/nitfut.jpg";
 
-interface NavbarProps {
-  dietitianName: string | null;
-  onLogout: () => void;
-}
+const Navbar: React.FC = () => {
+  const [dietitianName, setDietitianName] = useState<string | null>(null);
 
-const Navbar: React.FC<NavbarProps> = ({ dietitianName, onLogout }) => {
+  // Get the dietitian's name from localStorage when the component mounts
+  useEffect(() => {
+    const storedName = localStorage.getItem("username");
+    if (storedName) {
+      setDietitianName(storedName);
+    }
+  }, []);
+
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("dietitianName"); // Remove stored name
+    window.location.href = "/login"; // Redirect to login page
+  };
+
   return (
     <AppBar position="static" color="primary" sx={{ height: 64 }}>
       <Toolbar
@@ -62,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ dietitianName, onLogout }) => {
             <>
               <Avatar src="" alt="Profile" sx={{ width: 32, height: 32 }} />
               <Typography color="inherit">{dietitianName}</Typography>
-              <Button color="secondary" variant="contained" onClick={onLogout}>
+              <Button color="secondary" variant="contained" onClick={handleLogout}>
                 Logout
               </Button>
             </>
