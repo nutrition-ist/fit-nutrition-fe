@@ -18,6 +18,7 @@ import {
 import Navbar from "../../components/Navbar";
 import Image from "next/image";
 import axios from "axios";
+import RegisterPatient from "@/components/RegisterPatient";
 
 interface DietitianDashboardData {
   dietitian: {
@@ -61,9 +62,12 @@ const DietitianDashboard: React.FC = () => {
   const [profile, setProfile] = useState<DietitianDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+    console.log(token);
+    
     if (!token) {
       // Redirect to login with a return URL
       window.location.href = `/login?redirect=dietitian-dashboard`;
@@ -76,21 +80,15 @@ const DietitianDashboard: React.FC = () => {
 
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/dietitian/`, {
+        const response = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (response.data.results.length === 0) {
-          setError("No dietitian profile found.");
-        } else {
-          console.log(response.data.results[0]);
 
-          setProfile({
-            dietitian: response.data.results[0],
-            patients_list: [],
-            appointment_list: [],
-          });
-        }
-        
+        setProfile({
+          dietitian: response.data,
+          patients_list: [],
+          appointment_list: [],
+        });
       } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 401) {
@@ -115,6 +113,18 @@ const DietitianDashboard: React.FC = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handlePatientRegistered = (newPatient: any) => {
+    setProfile((prevProfile) => {
+      if (!prevProfile) return null;
+      return {
+        ...prevProfile,
+        patients_list: [...prevProfile.patients_list, newPatient],
+      };
+    });
+  };
+  const handleOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => setOpenDialog(false);
 
   if (loading) {
     return (
@@ -202,9 +212,21 @@ const DietitianDashboard: React.FC = () => {
           <Box sx={{ marginTop: 3 }}>
             {activeTab === 0 && (
               <Box>
-                <Typography variant="h6" gutterBottom>
-                  Patients
-                </Typography>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="h6">Patients</Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                  >
+                    Register Patient
+                  </Button>
+                </Stack>
+
                 <List>
                   {profile.patients_list.map((patient) => (
                     <ListItem key={patient.id}>
@@ -215,6 +237,13 @@ const DietitianDashboard: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
+
+                {/* Register Patient Dialog */}
+                <RegisterPatient
+                  open={openDialog}
+                  onClose={handleCloseDialog}
+                  onPatientRegistered={handlePatientRegistered}
+                />
               </Box>
             )}
             {activeTab === 1 && (
@@ -248,63 +277,63 @@ const DietitianDashboard: React.FC = () => {
                   Address: {profile.dietitian.address}
                 </Typography>
                 <Stack
-                    direction="row"
-                    spacing={1}
-                    flexWrap="wrap"
-                    justifyContent="center"
-                    mb={2}
-                  >
-                    {profile.dietitian.facebook && (
-                      <Button
-                        variant="outlined"
-                        href={profile.dietitian.facebook}
-                        target="_blank"
-                        size="small"
-                      >
-                        Facebook
-                      </Button>
-                    )}
-                    {profile.dietitian.instagram && (
-                      <Button
-                        variant="outlined"
-                        href={profile.dietitian.instagram}
-                        target="_blank"
-                        size="small"
-                      >
-                        Instagram
-                      </Button>
-                    )}
-                    {profile.dietitian.x_twitter && (
-                      <Button
-                        variant="outlined"
-                        href={profile.dietitian.x_twitter}
-                        target="_blank"
-                        size="small"
-                      >
-                        Twitter
-                      </Button>
-                    )}
-                    {profile.dietitian.youtube && (
-                      <Button
-                        variant="outlined"
-                        href={profile.dietitian.youtube}
-                        target="_blank"
-                        size="small"
-                      >
-                        YouTube
-                      </Button>
-                    )}
-                    {profile.dietitian.whatsapp && (
-                      <Button
-                        variant="outlined"
-                        href={`https://wa.me/${profile.dietitian.whatsapp}`}
-                        target="_blank"
-                        size="small"
-                      >
-                        WhatsApp
-                      </Button>
-                    )}
-                  </Stack>
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  justifyContent="center"
+                  mb={2}
+                >
+                  {profile.dietitian.facebook && (
+                    <Button
+                      variant="outlined"
+                      href={profile.dietitian.facebook}
+                      target="_blank"
+                      size="small"
+                    >
+                      Facebook
+                    </Button>
+                  )}
+                  {profile.dietitian.instagram && (
+                    <Button
+                      variant="outlined"
+                      href={profile.dietitian.instagram}
+                      target="_blank"
+                      size="small"
+                    >
+                      Instagram
+                    </Button>
+                  )}
+                  {profile.dietitian.x_twitter && (
+                    <Button
+                      variant="outlined"
+                      href={profile.dietitian.x_twitter}
+                      target="_blank"
+                      size="small"
+                    >
+                      Twitter
+                    </Button>
+                  )}
+                  {profile.dietitian.youtube && (
+                    <Button
+                      variant="outlined"
+                      href={profile.dietitian.youtube}
+                      target="_blank"
+                      size="small"
+                    >
+                      YouTube
+                    </Button>
+                  )}
+                  {profile.dietitian.whatsapp && (
+                    <Button
+                      variant="outlined"
+                      href={`https://wa.me/${profile.dietitian.whatsapp}`}
+                      target="_blank"
+                      size="small"
+                    >
+                      WhatsApp
+                    </Button>
+                  )}
+                </Stack>
               </Box>
             )}
           </Box>

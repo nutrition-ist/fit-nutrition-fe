@@ -18,10 +18,10 @@ const Navbar: React.FC = () => {
       >
         {/* Left Section: Navigation Links */}
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Link href="/dashboard" passHref>
+          <Link href="/dietitan-dashboard" passHref>
             <Button color="inherit">Dashboard</Button>
           </Link>
-          <Link href="/dietitians" passHref>
+          <Link href="/dietitian" passHref>
             <Button color="inherit">Dietitians</Button>
           </Link>
           <Link href="/recipes" passHref>
