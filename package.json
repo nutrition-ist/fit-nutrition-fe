@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test":"jest"
+    "test": "jest"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -18,7 +18,9 @@
     "@mui/lab": "^6.0.0-beta.18",
     "@mui/material": "^6.1.10",
     "@mui/material-nextjs": "^6.1.9",
+    "@mui/x-date-pickers": "^7.27.1",
     "axios": "^1.7.9",
+    "dayjs": "^1.11.13",
     "next": "15.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

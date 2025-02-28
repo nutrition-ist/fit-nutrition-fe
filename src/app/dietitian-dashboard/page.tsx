@@ -20,7 +20,8 @@ import Image from "next/image";
 import axios from "axios";
 import RegisterPatient from "@/components/RegisterPatient";
 import SocialLinks from "@/components/SocialLinks";
-import placeholderimage from "../../../public/images/placeholder.jpg"
+import placeholderimage from "../../../public/images/placeholder.jpg";
+import AppointmentsCalendar from "@/components/AppointmentsCalendar";
 
 interface DietitianDashboardData {
   dietitian: {
@@ -68,7 +69,6 @@ const DietitianDashboard: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    console.log(token);
 
     if (!token) {
       // Redirect to login with a return URL
@@ -169,9 +169,11 @@ const DietitianDashboard: React.FC = () => {
         >
           <Card sx={{ padding: 3, textAlign: "center" }}>
             <Image
-              src={profile.dietitian.profile_picture
-                ? `https://hazalkaynak.pythonanywhere.com/${profile.dietitian.profile_picture}`
-                : placeholderimage}
+              src={
+                profile.dietitian.profile_picture
+                  ? `https://hazalkaynak.pythonanywhere.com/${profile.dietitian.profile_picture}`
+                  : placeholderimage
+              }
               alt="Dietitian Picture"
               width={100}
               height={100}
@@ -255,18 +257,10 @@ const DietitianDashboard: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   Appointments
                 </Typography>
-                <List>
-                  {profile.appointment_list.map((appointment) => (
-                    <ListItem key={appointment.id}>
-                      <ListItemText
-                        primary={`Appointment on ${new Date(
-                          appointment.date_time
-                        ).toLocaleString()}`}
-                        secondary={`Active: ${appointment.is_active}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+                <AppointmentsCalendar
+                  appointments={profile.appointment_list}
+                  workingHours={{ startHour: 9, endHour: 17 }}
+                />
               </Box>
             )}
             {activeTab === 2 && (
