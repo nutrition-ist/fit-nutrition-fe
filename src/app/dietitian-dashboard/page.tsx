@@ -19,6 +19,8 @@ import Navbar from "../../components/Navbar";
 import Image from "next/image";
 import axios from "axios";
 import RegisterPatient from "@/components/RegisterPatient";
+import SocialLinks from "@/components/SocialLinks";
+import placeholderimage from "../../../public/images/placeholder.jpg"
 
 interface DietitianDashboardData {
   dietitian: {
@@ -67,7 +69,7 @@ const DietitianDashboard: React.FC = () => {
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     console.log(token);
-    
+
     if (!token) {
       // Redirect to login with a return URL
       window.location.href = `/login?redirect=dietitian-dashboard`;
@@ -83,7 +85,7 @@ const DietitianDashboard: React.FC = () => {
         const response = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         setProfile({
           dietitian: response.data.dietician,
           patients_list: response.data.patients_list,
@@ -125,7 +127,6 @@ const DietitianDashboard: React.FC = () => {
   };
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => setOpenDialog(false);
-  
 
   if (loading) {
     return (
@@ -156,7 +157,7 @@ const DietitianDashboard: React.FC = () => {
 
   return (
     <>
-    <Navbar />
+      <Navbar />
       <Grid container sx={{ height: "100vh" }}>
         {/* Left Sidebar: Profile Section */}
         <Grid
@@ -168,7 +169,9 @@ const DietitianDashboard: React.FC = () => {
         >
           <Card sx={{ padding: 3, textAlign: "center" }}>
             <Image
-              src={"/images/default-profile.jpg"}
+              src={profile.dietitian.profile_picture
+                ? `https://hazalkaynak.pythonanywhere.com/${profile.dietitian.profile_picture}`
+                : placeholderimage}
               alt="Dietitian Picture"
               width={100}
               height={100}
@@ -277,64 +280,7 @@ const DietitianDashboard: React.FC = () => {
                 <Typography variant="body1" gutterBottom>
                   Address: {profile.dietitian.address}
                 </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  flexWrap="wrap"
-                  justifyContent="center"
-                  mb={2}
-                >
-                  {profile.dietitian.facebook && (
-                    <Button
-                      variant="outlined"
-                      href={profile.dietitian.facebook}
-                      target="_blank"
-                      size="small"
-                    >
-                      Facebook
-                    </Button>
-                  )}
-                  {profile.dietitian.instagram && (
-                    <Button
-                      variant="outlined"
-                      href={profile.dietitian.instagram}
-                      target="_blank"
-                      size="small"
-                    >
-                      Instagram
-                    </Button>
-                  )}
-                  {profile.dietitian.x_twitter && (
-                    <Button
-                      variant="outlined"
-                      href={profile.dietitian.x_twitter}
-                      target="_blank"
-                      size="small"
-                    >
-                      Twitter
-                    </Button>
-                  )}
-                  {profile.dietitian.youtube && (
-                    <Button
-                      variant="outlined"
-                      href={profile.dietitian.youtube}
-                      target="_blank"
-                      size="small"
-                    >
-                      YouTube
-                    </Button>
-                  )}
-                  {profile.dietitian.whatsapp && (
-                    <Button
-                      variant="outlined"
-                      href={`https://wa.me/${profile.dietitian.whatsapp}`}
-                      target="_blank"
-                      size="small"
-                    >
-                      WhatsApp
-                    </Button>
-                  )}
-                </Stack>
+                <SocialLinks dietitian={profile.dietitian} />
               </Box>
             )}
           </Box>

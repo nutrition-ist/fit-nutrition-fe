@@ -1,9 +1,8 @@
 import React from "react";
-import { Box, Typography, Grid } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import axios from "axios";
-import Image from "next/image";
-import placeholderimage from "Fi/placeholder.jpg";
 import { notFound } from "next/navigation";
+import Profile from "@/components/Profile";
 
 interface Profile {
   first_name: string;
@@ -85,53 +84,7 @@ export default async function DietitianProfilePage({
         {profile.first_name} {profile.last_name}&apos;s Profile
       </Typography>
 
-      <Grid container spacing={4}>
-        {/* Profile Picture Section */}
-        <Grid item xs={12} sm={4}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <Image
-              src={
-                profile.profile_picture
-                  ? `https://hazalkaynak.pythonanywhere.com/${profile.profile_picture}`
-                  : placeholderimage
-              }
-              alt="Profile"
-              width={180}
-              height={180}
-              unoptimized
-              style={{
-                borderRadius: "50%",
-                objectFit: "cover",
-                marginBottom: "16px",
-              }}
-            />
-          </Box>
-        </Grid>
-
-        {/* Profile Details Section */}
-        <Grid item xs={12} sm={8}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>Email:</strong> {profile.email}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>Phone:</strong> {profile.phone}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>Address:</strong> {profile.address}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>About Me:</strong>{" "}
-            {profile.about_me || "No information available."}
-          </Typography>
-        </Grid>
-      </Grid>
+      <Profile profile={profile} />
     </Box>
   );
 }

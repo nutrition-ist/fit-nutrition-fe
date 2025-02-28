@@ -6,11 +6,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
-  Typography,
 } from "@mui/material";
 import axios from "axios";
+import Register, { NewPatientData } from "./Register"; // Import our new Register component
 
 /** Define Patient Data Structure */
 interface Patient {
@@ -29,16 +28,6 @@ interface RegisterPatientDialogProps {
   open: boolean;
   onClose: () => void;
   onPatientRegistered: (newPatient: Patient) => void;
-}
-
-/** Define Input Fields for New Patient */
-interface NewPatientData {
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  password: string;
 }
 
 /** Register Patient Dialog Component */
@@ -74,18 +63,23 @@ const RegisterPatient: React.FC<RegisterPatientDialogProps> = ({
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL ||
-        "https://hazalkaynak.pythonanywhere.com/";
+        "https://hazalkaynak.pythonanywhere.com";
 
-      const response = await axios.post<Patient>(`${apiUrl}/register/patient/`, newPatient, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.post<Patient>(
+        `${apiUrl}/register/patient/`,
+        newPatient,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const createdPatient: Patient = response.data;
 
       // Pass the new patient back to the parent component
       onPatientRegistered(createdPatient);
-      onClose(); // Close the dialog
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // Close the dialog
+      onClose();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setRegisterError("Failed to register patient. Please try again.");
     }
@@ -95,65 +89,19 @@ const RegisterPatient: React.FC<RegisterPatientDialogProps> = ({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Register New Patient</DialogTitle>
       <DialogContent>
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Username"
-          name="username"
-          value={newPatient.username}
-          onChange={handleInputChange}
+        <Register
+          newPatient={newPatient}
+          registerError={registerError}
+          onInputChange={handleInputChange}
         />
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Email"
-          name="email"
-          type="email"
-          value={newPatient.email}
-          onChange={handleInputChange}
-        />
-        <TextField
-          fullWidth
-          margin="dense"
-          label="First Name"
-          name="first_name"
-          value={newPatient.first_name}
-          onChange={handleInputChange}
-        />
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Last Name"
-          name="last_name"
-          value={newPatient.last_name}
-          onChange={handleInputChange}
-        />
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Phone"
-          name="phone"
-          value={newPatient.phone}
-          onChange={handleInputChange}
-        />
-        <TextField
-          fullWidth
-          margin="dense"
-          label="Password"
-          name="password"
-          type="password"
-          value={newPatient.password}
-          onChange={handleInputChange}
-        />
-        {registerError && (
-          <Typography color="error" textAlign="center">
-            {registerError}
-          </Typography>
-        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" color="primary" onClick={handleRegisterPatient}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleRegisterPatient}
+        >
           Register
         </Button>
       </DialogActions>
