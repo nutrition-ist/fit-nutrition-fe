@@ -1,21 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CircularProgress,
-  Button,
-  Chip,
-  Stack,
-} from "@mui/material";
+import { Box, Typography, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
-import Image from "next/image";
-import placeholderimage from "../../../public/images/placeholder.jpg";
+
 import InitialNavbar from "../../components/InitialNavbar";
+import DietitianCard from "@/components/DietitianCard";
 
 interface DietitianType {
   id: number;
@@ -221,150 +211,7 @@ const Dietitians: React.FC = () => {
         <Grid container spacing={3} justifyContent="center">
           {dietitians.map((dietitian) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  flexGrow: 1,
-                  minHeight: 400,
-                }}
-              >
-                <Image
-                  src={
-                    dietitian.profile_picture
-                      ? `https://hazalkaynak.pythonanywhere.com/${dietitian.profile_picture}`
-                      : placeholderimage
-                  }
-                  alt={`${dietitian.first_name} ${dietitian.last_name}`}
-                  layout="responsive"
-                  width={1}
-                  height={1}
-                  unoptimized
-                  style={{
-                    objectFit: "cover",
-                    borderTopLeftRadius: "4px",
-                    borderTopRightRadius: "4px",
-                  }}
-                />
-                <CardContent sx={{ padding: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                    {dietitian.first_name} {dietitian.last_name}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Email:</strong> {dietitian.email}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Phone:</strong> {dietitian.phone}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Address:</strong> {dietitian.address}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>About Me:</strong>{" "}
-                    {dietitian.about_me || "No information available."}
-                  </Typography>
-
-                  {/* Qualifications */}
-                  {dietitian.qualifications && (
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ flexWrap: "wrap", mb: 2 }}
-                    >
-                      {dietitian.qualifications.map((qualification, index) => (
-                        <Chip
-                          key={index}
-                          label={qualification}
-                          color="primary"
-                          size="small"
-                        />
-                      ))}
-                    </Stack>
-                  )}
-
-                  {/* Social Media Links */}
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    flexWrap="wrap"
-                    justifyContent="center"
-                    mb={2}
-                  >
-                    {dietitian.facebook && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.facebook}
-                        target="_blank"
-                        size="small"
-                      >
-                        Facebook
-                      </Button>
-                    )}
-                    {dietitian.instagram && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.instagram}
-                        target="_blank"
-                        size="small"
-                      >
-                        Instagram
-                      </Button>
-                    )}
-                    {dietitian.x_twitter && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.x_twitter}
-                        target="_blank"
-                        size="small"
-                      >
-                        Twitter
-                      </Button>
-                    )}
-                    {dietitian.youtube && (
-                      <Button
-                        variant="outlined"
-                        href={dietitian.youtube}
-                        target="_blank"
-                        size="small"
-                      >
-                        YouTube
-                      </Button>
-                    )}
-                    {dietitian.whatsapp && (
-                      <Button
-                        variant="outlined"
-                        href={`https://wa.me/${dietitian.whatsapp}`}
-                        target="_blank"
-                        size="small"
-                      >
-                        WhatsApp
-                      </Button>
-                    )}
-                  </Stack>
-
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    href={`/dietitian/${dietitian.username}`}
-                    sx={{ mt: 2 }}
-                    onClick={() => {
-                      sessionStorage.setItem(
-                        "dietitiansData",
-                        JSON.stringify(dietitians)
-                      );
-                      sessionStorage.setItem("currentPage", page.toString());
-                      sessionStorage.setItem(
-                        "scrollPosition",
-                        window.scrollY.toString()
-                      );
-                    }}
-                  >
-                    View Profile
-                  </Button>
-                </CardContent>
-              </Card>
+              <DietitianCard dietitian={dietitian} />
             </Grid>
           ))}
         </Grid>

@@ -12,29 +12,34 @@ import {
   List,
   ListItem,
   ListItemText,
-  Link as MuiLink,
+  Button,
+  Stack,
 } from "@mui/material";
 import Navbar from "../../components/Navbar";
 import Image from "next/image";
 import axios from "axios";
+import RegisterPatient from "@/components/RegisterPatient";
+import SocialLinks from "@/components/SocialLinks";
+import placeholderimage from "../../../public/images/placeholder.jpg";
+import AppointmentsCalendar from "@/components/AppointmentsCalendar";
 
 interface DietitianDashboardData {
-  dietician: {
+  dietitian: {
     id: number;
     username: string;
     email: string;
     first_name: string;
     last_name: string;
-    about_me: string;
-    qualifications: { qualifications: string[] };
+    about_me?: string;
+    qualifications: string[];
     phone: string;
     address: string;
     profile_picture: string | null;
-    facebook: string;
-    instagram: string;
-    x_twitter: string;
-    youtube: string;
-    whatsapp: string;
+    facebook: string | null;
+    instagram: string | null;
+    x_twitter: string | null;
+    youtube: string | null;
+    whatsapp: string | null;
   };
   patients_list: {
     id: number;
@@ -60,9 +65,11 @@ const DietitianDashboard: React.FC = () => {
   const [profile, setProfile] = useState<DietitianDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+
     if (!token) {
       // Redirect to login with a return URL
       window.location.href = `/login?redirect=dietitian-dashboard`;
@@ -75,10 +82,15 @@ const DietitianDashboard: React.FC = () => {
 
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/dietitian/me/`, {
+        const response = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setProfile(response.data);
+
+        setProfile({
+          dietitian: response.data.dietician,
+          patients_list: response.data.patients_list,
+          appointment_list: [],
+        });
       } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 401) {
@@ -103,6 +115,18 @@ const DietitianDashboard: React.FC = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handlePatientRegistered = (newPatient: any) => {
+    setProfile((prevProfile) => {
+      if (!prevProfile) return null;
+      return {
+        ...prevProfile,
+        patients_list: [...prevProfile.patients_list, newPatient],
+      };
+    });
+  };
+  const handleOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => setOpenDialog(false);
 
   if (loading) {
     return (
@@ -146,26 +170,28 @@ const DietitianDashboard: React.FC = () => {
           <Card sx={{ padding: 3, textAlign: "center" }}>
             <Image
               src={
-                profile.dietician.profile_picture ||
-                "/images/default-profile.jpg"
+                profile.dietitian.profile_picture
+                  ? `https://hazalkaynak.pythonanywhere.com/${profile.dietitian.profile_picture}`
+                  : placeholderimage
               }
               alt="Dietitian Picture"
               width={100}
               height={100}
+              unoptimized
               style={{
                 borderRadius: "50%",
                 marginBottom: "16px",
               }}
             />
             <Typography variant="h6">
-              {profile.dietician.first_name} {profile.dietician.last_name}
+              {profile.dietitian.first_name} {profile.dietitian.last_name}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 1 }}>
-              {profile.dietician.about_me}
+              {profile.dietitian.about_me}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 1 }}>
-              {profile.dietician.qualifications?.qualifications?.length
-                ? profile.dietician.qualifications.qualifications.join(", ")
+              {profile.dietitian.qualifications?.length
+                ? profile.dietitian.qualifications.join(", ")
                 : "No qualifications available."}
             </Typography>
           </Card>
@@ -192,9 +218,21 @@ const DietitianDashboard: React.FC = () => {
           <Box sx={{ marginTop: 3 }}>
             {activeTab === 0 && (
               <Box>
-                <Typography variant="h6" gutterBottom>
-                  Patients
-                </Typography>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="h6">Patients</Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                  >
+                    Register Patient
+                  </Button>
+                </Stack>
+
                 <List>
                   {profile.patients_list.map((patient) => (
                     <ListItem key={patient.id}>
@@ -205,6 +243,13 @@ const DietitianDashboard: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
+
+                {/* Register Patient Dialog */}
+                <RegisterPatient
+                  open={openDialog}
+                  onClose={handleCloseDialog}
+                  onPatientRegistered={handlePatientRegistered}
+                />
               </Box>
             )}
             {activeTab === 1 && (
@@ -212,18 +257,10 @@ const DietitianDashboard: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                   Appointments
                 </Typography>
-                <List>
-                  {profile.appointment_list.map((appointment) => (
-                    <ListItem key={appointment.id}>
-                      <ListItemText
-                        primary={`Appointment on ${new Date(
-                          appointment.date_time
-                        ).toLocaleString()}`}
-                        secondary={`Active: ${appointment.is_active}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+                <AppointmentsCalendar
+                  appointments={profile.appointment_list}
+                  workingHours={{ startHour: 9, endHour: 17 }}
+                />
               </Box>
             )}
             {activeTab === 2 && (
@@ -232,49 +269,12 @@ const DietitianDashboard: React.FC = () => {
                   Contact & Socials
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  Phone: {profile.dietician.phone}
+                  Phone: {profile.dietitian.phone}
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  Address: {profile.dietician.address}
+                  Address: {profile.dietitian.address}
                 </Typography>
-                <List>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.facebook}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Facebook
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.instagram}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Instagram
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.x_twitter}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Twitter
-                    </MuiLink>
-                  </ListItem>
-                  <ListItem>
-                    <MuiLink
-                      href={profile.dietician.youtube}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      YouTube
-                    </MuiLink>
-                  </ListItem>
-                </List>
+                <SocialLinks dietitian={profile.dietitian} />
               </Box>
             )}
           </Box>

@@ -1,12 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AppBar, Toolbar, Box, Button, Avatar } from "@mui/material";
+import { AppBar, Toolbar, Box, Button, Avatar, Typography } from "@mui/material";
 import nitImage from "../../public/images/nitfut.jpg";
 
 const Navbar: React.FC = () => {
+  const [dietitianName, setDietitianName] = useState<string | null>(null);
+
+  // Get the dietitian's name from localStorage when the component mounts
+  useEffect(() => {
+    const storedName = localStorage.getItem("username");
+    if (storedName) {
+      setDietitianName(storedName);
+    }
+  }, []);
+
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("dietitianName"); // Remove stored name
+    window.location.href = "/login"; // Redirect to login page
+  };
+
   return (
     <AppBar position="static" color="primary" sx={{ height: 64 }}>
       <Toolbar
@@ -18,10 +36,10 @@ const Navbar: React.FC = () => {
       >
         {/* Left Section: Navigation Links */}
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Link href="/dashboard" passHref>
+          <Link href="/dietitian-dashboard" passHref>
             <Button color="inherit">Dashboard</Button>
           </Link>
-          <Link href="/dietitians" passHref>
+          <Link href="/dietitian" passHref>
             <Button color="inherit">Dietitians</Button>
           </Link>
           <Link href="/recipes" passHref>
@@ -51,12 +69,21 @@ const Navbar: React.FC = () => {
           </Link>
         </Box>
 
-        {/* Right Section: Profile Link */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Avatar src="" alt="Profile" sx={{ width: 32, height: 32 }} />
-          <Link href="/patient-profile" passHref>
-            <Button color="inherit">Profile</Button>
-          </Link>
+        {/* Right Section: Profile & Logout */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {dietitianName ? (
+            <>
+              <Avatar src="" alt="Profile" sx={{ width: 32, height: 32 }} />
+              <Typography color="inherit">{dietitianName}</Typography>
+              <Button color="secondary" variant="contained" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Link href="/login" passHref>
+              <Button color="inherit">Login</Button>
+            </Link>
+          )}
         </Box>
       </Toolbar>
     </AppBar>

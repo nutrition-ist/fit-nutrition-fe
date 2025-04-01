@@ -21,20 +21,45 @@ const LoginPage: React.FC = () => {
   const [redirectUrl, setRedirectUrl] = useState<string>("dietitian-dashboard");
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const queryParams = new URLSearchParams(window.location.search);
-    const redirect = queryParams.get("redirect") || "dietitian-dashboard";
+    const checkToken = async () => {
+      const token = localStorage.getItem("accessToken");
+      const queryParams = new URLSearchParams(window.location.search);
+      const redirect = queryParams.get("redirect") || "dietitian-dashboard";
 
-    setRedirectUrl(redirect);
+      setRedirectUrl(redirect);
 
-    if (token) {
-      window.location.href = `/${redirect}`;
-    }
+      if (!token) {
+        return;
+      }
+
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL ||
+          "https://hazalkaynak.pythonanywhere.com/";
+
+        await axios.get(`${apiUrl}/token/verify/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // If token is valid, redirect
+        window.location.href = `/${redirect}`;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        console.warn("Access token expired. Trying to refresh...");
+        const refreshed = await refreshAccessToken();
+
+        if (!refreshed) {
+          logoutUser(); // Logout if refresh fails
+        }
+      }
+    };
+
+    checkToken();
   }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -42,31 +67,66 @@ const LoginPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: FormEvent): Promise<void> => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://hazalkaynak.pythonanywhere.com/"; 
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://hazalkaynak.pythonanywhere.com/";
 
       const response = await axios.post(`${apiUrl}/token/`, formData);
 
       const { access, refresh } = response.data;
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
+      localStorage.setItem("username", formData.username);
 
       setSuccessMessage("Login successful!");
 
-
       window.location.href = `/${redirectUrl}`;
     } catch (err: unknown) {
-      if (err instanceof Error && axios.isAxiosError(err)) {
+      if (axios.isAxiosError(err)) {
         setError(err.response?.data?.detail || "Invalid username or password.");
       } else {
         setError("An unexpected error occurred.");
       }
     }
+  };
+
+  // Function to refresh the access token
+  const refreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!refreshToken) {
+      return false;
+    }
+
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://hazalkaynak.pythonanywhere.com/";
+
+      const response = await axios.post(`${apiUrl}/token/refresh/`, {
+        refresh: refreshToken,
+      });
+
+      localStorage.setItem("accessToken", response.data.access); 
+      return true;
+    } catch (error) {
+      console.error("Failed to refresh access token:", error);
+      return false;
+    }
+  };
+
+  //  Logout function
+  const logoutUser = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("username");
+    window.location.href = "/login";
   };
 
   return (
