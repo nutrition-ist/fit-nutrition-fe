@@ -1,63 +1,59 @@
 "use client";
 
-import { Box, IconButton, TextField, InputAdornment } from "@mui/material";
+import React, { FC, useState, KeyboardEvent } from "react";
+import { Box, TextField, InputAdornment, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
-const SearchBar = () => {
+export interface SearchBarProps {
+  placeholder?: string;
+  onSearch?: (query: string) => void;
+  defaultValue?: string;
+}
+
+const SearchBar: FC<SearchBarProps> = ({
+  placeholder = "Search…",
+  onSearch,
+  defaultValue = "",
+}) => {
+  const [query, setQuery] = useState(defaultValue);
+
+  const triggerSearch = () => {
+    onSearch?.(query.trim());
+  };
+
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") triggerSearch();
+  };
+
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "15vh",
-        alignItems: "center",
-        justifyContent: "center",
+    <Box
+      sx={{
+        width: 1,
+        bgcolor: "background.paper",
+        borderRadius: 4,
+        boxShadow: "none",
+        "&:hover": { boxShadow: "0 1px 6px rgba(32,33,36,0.28)" },
+        "& .MuiOutlinedInput-root": { borderRadius: 4 },
       }}
     >
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        sx={{
-          p: 2,
-          minWidth: 650,
-          maxWidth: 900,
-          backgroundColor: "background.paper",
-          borderRadius: "50px",
-          boxShadow: "none",
-          border: "1px solid #dfe1e5",
-          "&:hover": {
-            boxShadow: "0 1px 6px rgba(32,33,36,0.28)",
-          },
-          "& .MuiOutlinedInput-root": {
-            "& fieldset": {
-              borderColor: "transparent",
-            },
-            "&.Mui-focused fieldset": {
-              borderColor: "transparent",
-              boxShadow: "none",
-            },
-            "&:hover fieldset": {
-              borderColor: "transparent",
-            },
-          },
+      <TextField
+        fullWidth
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleKey}
+        variant="outlined"
+        placeholder={placeholder}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <IconButton onClick={triggerSearch} aria-label="search">
+                <SearchIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
         }}
-      >
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search your craving..."
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconButton>
-                  <SearchIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-    </div>
+      />
+    </Box>
   );
 };
 
