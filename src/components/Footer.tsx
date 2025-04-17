@@ -9,7 +9,7 @@ const Footer: React.FC = () => (
   >
     <Container maxWidth="lg">
       <Grid container spacing={4}>
-        {/* Logo + address */}
+        {/* Logo */}
         <Grid item xs={12} md={3}>
           <Link href="/" passHref>
             <Box
@@ -31,16 +31,6 @@ const Footer: React.FC = () => (
               </Typography>
             </Box>
           </Link>
-
-          <Typography variant="body2">
-            Queen Street 12/9
-            <br />
-            Manchester, UK M1 4JA
-            <br />
-            email@fitnutrition.com
-            <br />
-            +44 0123 456789
-          </Typography>
         </Grid>
 
         {/* Static link columns */}
