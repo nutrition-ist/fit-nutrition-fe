@@ -1,156 +1,137 @@
+"use client";
 import React from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Grid, //deprecated
-  Card,
-  CardContent,
-} from "@mui/material";
 import Image from "next/image";
-import Link from "next/link";
+import { Box } from "@mui/material";
+import FeatureSection from "@/components/FeatureSection";
+import ServicesSection from "@/components/ServicesSection";
+import MainAppBar from "@/components/MainAppBar";
+import HeroSection from "@/components/HeroSection";
+import MetricsBanner from "@/components/MetricsBanner";
+import Carousel from "@/components/Carousel";
+import CtaSection from "@/components/CtaSection";
+import Footer from "@/components/Footer";
 
-import HeroImage from "Fi/cook.png";
-import TestimonialImage from "Fi/nitfut.jpg";
-import InitialNavbar from "../components/InitialNavbar"
+const NAV_LINKS = [
+  { label: "Find a Dietitian", href: "/dietitian" },
+  { label: "Blog", href: "/blog" },
+  { label: "Login", href: "/login" },
+];
+
+const SERVICE_ITEMS = [
+  {
+    title: "Personalized Nutrition Counseling",
+    img: "/images/PersonalizedNut.png",
+  },
+  { title: "Meal Planning with AI", img: "/images/MealPlanningAi.png" },
+  { title: "Customizable Recipes", img: "/images/CustomizableRecipes.png" },
+  { title: "AI Recipe Generator", img: "/images/AIRecipeGen.png" },
+];
+
+const METRICS = [
+  {
+    value: "8,500+",
+    label: "Recipes",
+    caption: "From gluten‑free to high‑protein",
+    icon: (
+      <Image
+        src="/images/recipesIcon.jpg"
+        alt=""
+        width={90}
+        height={70}
+        style={{ objectFit: "contain" }}
+      />
+    ),
+  },
+  {
+    value: "2,500+",
+    label: "Registered Dietitians",
+    caption: "Helping clients eat better, live better",
+    icon: (
+      <Image
+        src="/images/registeredIcon.jpg"
+        alt=""
+        width={90}
+        height={70}
+        style={{ objectFit: "contain" }}
+      />
+    ),
+  },
+  {
+    value: "150,000+",
+    label: "Hours Saved on Meal Planning",
+    caption: "Thanks to automated suggestions",
+    icon: (
+      <Image
+        src="/images/hoursIcon.jpg"
+        alt=""
+        width={90}
+        height={70}
+        style={{ objectFit: "contain" }}
+      />
+    ),
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    img: "/images/avatars/sofia.jpg",
+    name: "Dr. Sofia Mendes, Clinical Dietitian",
+    quote:
+      "The built‑in meal planning tools cut my session prep time in half. My clients love the personalized recipe library!",
+  },
+  {
+    img: "/images/avatars/mark.jpg",
+    name: "Mark Duval, Sports Nutritionist",
+    quote:
+      "Booking consultations is now seamless. No more back‑and‑forth emails.",
+  },
+  {
+    img: "/images/avatars/ayse.jpg",
+    name: "Ayşe Karaca, Registered Dietitian",
+    quote:
+      "It’s like having an assistant that knows my workflow. From recipe macros to reminders, this app just gets dietitians.",
+  },
+];
 
 const LandingPage: React.FC = () => {
   return (
     <Box>
-     <InitialNavbar />
-
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 5,
-          py: 5,
-          backgroundColor: "#f5f5f5",
+      <MainAppBar links={NAV_LINKS} />
+      <HeroSection
+        title="Find Your Perfect Dietitian"
+        subtitle="Connect with expert dietitians and start your journey to a healthier you."
+        bgImage="/images/slider.png"
+        searchBarProps={{
+          placeholder: "Search for dietitians",
+          onSearch: (q) => console.log("search:", q),
         }}
-      >
-        <Box>
-          <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2 }}>
-            Find Your Perfect Dietitian
-          </Typography>
-          <Typography variant="subtitle1" sx={{ mb: 4 }}>
-            Connect with expert dietitians and start your journey to a healthier
-            you.
-          </Typography>
-          <TextField
-            variant="outlined"
-            placeholder="Search for a dietitian"
-            sx={{ width: "300px", mr: 2 }}
-          />
-          <Button variant="contained" color="primary">
-            Search
-          </Button>
-        </Box>
-        <Box sx={{ maxWidth: "40%" }}>
-          <Image
-            src={HeroImage}
-            alt="Healthy lifestyle"
-            width={400}
-            height={500}
-            style={{ borderRadius: "10px" }}
-          />
-        </Box>
-      </Box>
-      <Box sx={{ px: 5, py: 5 }}>
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
-        >
-          How It Works
-        </Typography>
-        <Grid container spacing={4}>
-          {[
-            {
-              title: "Search Dietitians",
-              description:
-                "Explore our list of qualified dietitians tailored to your preferences.",
-              buttonText: "Get Started",
-            },
-            {
-              title: "Book a Consultation",
-              description:
-                "Schedule a session with your selected dietitian at your convenience.",
-              buttonText: "Book Now",
-            },
-            {
-              title: "Achieve Your Goals",
-              description:
-                "Follow personalized diet plans and track your progress.",
-              buttonText: "Learn More",
-            },
-          ].map((item, index) => (
-            <Grid item xs={12} sm={4} key={index}>
-              <Card sx={{ textAlign: "center", p: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
-                  {item.title}
-                </Typography>
-                <Typography>{item.description}</Typography>
-                <Link href="/wip" passHref>
-                  <Button variant="contained" color="primary" sx={{ mt: 2 }}>
-                    {item.buttonText}
-                  </Button>
-                </Link>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+        primaryCta={{ label: "Book an Appointment", href: "/booking" }}
+      />
+      <ServicesSection items={SERVICE_ITEMS} />
 
-      <Box
-        sx={{
-          backgroundColor: "#f5f5f5",
-          py: 5,
-          textAlign: "center",
+      <FeatureSection />
+      <MetricsBanner items={METRICS} />
+      <Carousel items={TESTIMONIALS} />
+      <CtaSection
+        title="For Nutrition Pros Only"
+        paragraphs={[
+          `You’re the expert — we just give you the tools to shine! Get started with a <strong>14‑day free trial</strong> made just for dietitians, nutritionists, and wellness teams.`,
+          "Your clients? They get access for free. Always.",
+          "Try it out — no credit card needed.",
+        ]}
+        primary={{
+          label: "Start Free Trial",
+          href: "/register",
+          // variant defaults to "contained"
         }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: "bold", mb: 3 }}>
-          Success Stories
-        </Typography>
-        <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} sm={6}>
-            <Card role="article">
-              <CardContent>
-                <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                  John Doe
-                </Typography>
-                <Typography sx={{ mb: 2 }}>I like this site 5/5</Typography>
-                <Image
-                  src={TestimonialImage}
-                  alt="John Doe"
-                  width={200}
-                  height={200}
-                  style={{
-                    borderRadius: "10px",
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Footer Section */}
-      <Box
-        sx={{
-          backgroundColor: "#3f51b5",
-          color: "#ffffff",
-          py: 3,
-          px: 5,
-          textAlign: "center",
+        secondary={{
+          label: "See Pricing Plans",
+          href: "/pricing",
+          variant: "outlined",
         }}
-      >
-        <Typography variant="body2">
-          &copy; 2024 Fit Nutrition. All Rights Reserved.
-        </Typography>
-      </Box>
+      />
+      <Footer />
     </Box>
   );
 };
-
 export default LandingPage;
