@@ -92,6 +92,12 @@ const Navbar: FC<NavbarProps> = ({
   }, [roleProp, pathname]);
 
   const { links, cta } = cfg[role];
+  const profileHref =
+    role === "dietitian"
+      ? "/dietitian-profile"
+      : role === "patient"
+      ? "/patient-profile"
+      : "#";
 
   const logout = () => {
     ["accessToken", "refreshToken", "username", "role"].forEach((k) =>
@@ -201,12 +207,26 @@ const Navbar: FC<NavbarProps> = ({
 
             {role !== "visitor" && (
               <>
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {userName?.charAt(0).toUpperCase()}
-                </Avatar>
-                <Typography sx={{ color: "white", mx: 1 }}>
-                  {userName}
-                </Typography>
+                {/* clickable avatar + name */}
+                <Link
+                  href={profileHref}
+                  passHref
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ cursor: "pointer" }}
+                  >
+                    <Avatar sx={{ width: 32, height: 32 }}>
+                      {userName?.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Typography sx={{ color: "white" }}>{userName}</Typography>
+                  </Stack>
+                </Link>
+
+                {/* logout button stays the same */}
                 <Button
                   variant="outlined"
                   size="small"
