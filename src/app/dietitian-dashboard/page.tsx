@@ -85,7 +85,7 @@ const DietitianDashboard: React.FC = () => {
         const response = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        console.log(response);
         setProfile({
           dietitian: response.data.dietician,
           patients_list: response.data.patients_list,

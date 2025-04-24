@@ -84,6 +84,8 @@ const LoginPage: React.FC = () => {
       localStorage.setItem("refreshToken", refresh);
       localStorage.setItem("username", formData.username);
 
+      const isDietitian = redirectUrl === "dietitian-dashboard";
+      localStorage.setItem("role", isDietitian ? "dietitian" : "patient");
       setSuccessMessage("Login successful!");
 
       window.location.href = `/${redirectUrl}`;
@@ -113,7 +115,7 @@ const LoginPage: React.FC = () => {
         refresh: refreshToken,
       });
 
-      localStorage.setItem("accessToken", response.data.access); 
+      localStorage.setItem("accessToken", response.data.access);
       return true;
     } catch (error) {
       console.error("Failed to refresh access token:", error);
