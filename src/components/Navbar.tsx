@@ -17,12 +17,10 @@ import {
   Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useRouter, usePathname } from "next/navigation";
-
 export type Role = "visitor" | "patient" | "dietitian";
 
 export interface NavbarProps {
-  role?: Role; //istenilen Role sokmak icin
+  role?: Role;//istenilen Role sokmak icin
   logo?: { primary: string; secondary: string; href?: string };
   bgcolor?: string;
 }
@@ -62,16 +60,16 @@ const Navbar: FC<NavbarProps> = ({
   logo = { primary: "FIT", secondary: "NUTRITION", href: "/" },
   bgcolor = "#002a23",
 }) => {
-  const router = useRouter();
-  const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [role, setRole] = useState<Role>("visitor");
 
   useEffect(() => {
     const deriveRoleFromPath = (): Role => {
-      if (pathname?.startsWith("/dietitian-dashboard")) return "dietitian";
-      if (pathname?.startsWith("/patient-dashboard")) return "patient"; //logine patienti koyunca bu aktif olcak
+      const path =
+        typeof window !== "undefined" ? window.location.pathname : "/";
+      if (path.startsWith("/dietitian-dashboard")) return "dietitian";
+      if (path.startsWith("/patient-dashboard")) return "patient";//logine patienti koyunca bu aktif olcak
       return "visitor";
     };
 
@@ -89,9 +87,10 @@ const Navbar: FC<NavbarProps> = ({
     } else {
       setRole(deriveRoleFromPath());
     }
-  }, [roleProp, pathname]);
+  }, [roleProp]);
 
   const { links, cta } = cfg[role];
+
   const profileHref =
     role === "dietitian"
       ? "/dietitian-profile"
@@ -103,16 +102,12 @@ const Navbar: FC<NavbarProps> = ({
     ["accessToken", "refreshToken", "username", "role"].forEach((k) =>
       localStorage.removeItem(k)
     );
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   /* Drawer (mobile) */
   const drawer = (
-    <Box
-      sx={{ width: 260 }}
-      role="presentation"
-      onClick={() => setDrawerOpen(false)}
-    >
+    <Box sx={{ width: 260 }} role="presentation" onClick={() => setDrawerOpen(false)}>
       <List>
         {links.map(({ label, href }) => (
           <Link key={href} href={href} passHref>
@@ -149,17 +144,8 @@ const Navbar: FC<NavbarProps> = ({
         <Toolbar sx={{ minHeight: { xs: 56, md: 72 }, px: { xs: 2, md: 3 } }}>
           {/* Logo */}
           <Link href={logo.href ?? "/"} passHref>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "baseline",
-                cursor: "pointer",
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, color: "#C35200", mr: 0.5 }}
-              >
+            <Box sx={{ display: "flex", alignItems: "baseline", cursor: "pointer" }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "#C35200", mr: 0.5 }}>
                 {logo.primary}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -226,7 +212,7 @@ const Navbar: FC<NavbarProps> = ({
                   </Stack>
                 </Link>
 
-                {/* logout button stays the same */}
+                {/* logout button */}
                 <Button
                   variant="outlined"
                   size="small"
@@ -256,11 +242,7 @@ const Navbar: FC<NavbarProps> = ({
         </Toolbar>
       </AppBar>
 
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      >
+      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {drawer}
       </Drawer>
     </>

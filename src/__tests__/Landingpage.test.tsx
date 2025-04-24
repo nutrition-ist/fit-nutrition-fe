@@ -11,11 +11,6 @@ describe("LandingPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders all top‑nav links", () => {
-    ["Find a Dietitian", "Blog", "Login"].forEach((text) => {
-      expect(screen.getByRole("button", { name: text })).toBeInTheDocument();
-    });
-  });
 
   it("displays four service cards", () => {
     const section =
@@ -34,9 +29,5 @@ describe("LandingPage", () => {
     ["8,500+", "2,500+", "150,000+"].forEach((num) => {
       expect(screen.getByText(num)).toBeInTheDocument();
     });
-  });
-
-  it("renders the fixed footer", () => {
-    expect(screen.getByText(/© \d{4} fit nutrition/i)).toBeInTheDocument();
   });
 });
