@@ -4,7 +4,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { Box, Typography, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
 import DietitianCard from "@/components/DietitianCard";
-import Navbar from "@/components/Navbar";
 
 interface DietitianType {
   id: number;
@@ -186,43 +185,40 @@ const Dietitians: React.FC = () => {
   }
 
   return (
-    <>
-      <Navbar/>
-      <Box
-        sx={{
-          maxWidth: "1400px",
-          mx: "auto",
-          mt: 5,
-          px: 3,
-          minHeight: "100vh",
-          overflow: "hidden", // Scrollbar fix
-        }}
+    <Box
+      sx={{
+        maxWidth: "1400px",
+        mx: "auto",
+        mt: 5,
+        px: 3,
+        minHeight: "100vh",
+        overflow: "hidden", // Scrollbar fix
+      }}
+    >
+      <Box ref={topLoaderRef} sx={{ height: 10 }} />
+
+      <Typography
+        variant="h4"
+        sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
       >
-        <Box ref={topLoaderRef} sx={{ height: 10 }} />
+        Dietitians List
+      </Typography>
 
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
-        >
-          Dietitians List
-        </Typography>
+      <Grid container spacing={3} justifyContent="center">
+        {dietitians.map((dietitian) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
+            <DietitianCard dietitian={dietitian} />
+          </Grid>
+        ))}
+      </Grid>
 
-        <Grid container spacing={3} justifyContent="center">
-          {dietitians.map((dietitian) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={dietitian.id}>
-              <DietitianCard dietitian={dietitian} />
-            </Grid>
-          ))}
-        </Grid>
-
-        <Box
-          ref={bottomLoaderRef}
-          sx={{ display: "flex", justifyContent: "center", mt: 4, height: 10 }}
-        >
-          {loading && <CircularProgress />}
-        </Box>
+      <Box
+        ref={bottomLoaderRef}
+        sx={{ display: "flex", justifyContent: "center", mt: 4, height: 10 }}
+      >
+        {loading && <CircularProgress />}
       </Box>
-    </>
+    </Box>
   );
 };
 

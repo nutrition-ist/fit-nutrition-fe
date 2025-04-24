@@ -3,7 +3,6 @@ import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { notFound } from "next/navigation";
 import Profile from "@/components/Profile";
-
 interface Profile {
   first_name: string;
   last_name: string;

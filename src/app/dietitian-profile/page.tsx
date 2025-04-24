@@ -5,7 +5,6 @@ import { Box, Typography, Grid, CircularProgress } from "@mui/material";
 import Image from "next/image";
 import axios from "axios";
 import placeholderimage from "../../../public/images/placeholder.jpg";
-import Navbar from "@/components/Navbar";
 
 interface Profile {
   id: number;
@@ -90,65 +89,62 @@ const DietitianProfile: React.FC = () => {
   }
 
   return (
-    <>
-      <Navbar />
-      <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
-        >
-          Dietitian Profile
-        </Typography>
+    <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
+      <Typography
+        variant="h4"
+        sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
+      >
+        Dietitian Profile
+      </Typography>
 
-        <Grid container spacing={4}>
-          {/* Profile Picture and Contact Information Section */}
-          <Grid item xs={12} sm={4}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
+      <Grid container spacing={4}>
+        {/* Profile Picture and Contact Information Section */}
+        <Grid item xs={12} sm={4}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+            }}
+          >
+            <Image
+              src={profile?.profile_picture || placeholderimage}
+              alt="Profile"
+              width={150}
+              height={150}
+              style={{
+                borderRadius: "50%",
+                objectFit: "cover",
+                marginBottom: "16px",
               }}
-            >
-              <Image
-                src={profile?.profile_picture || placeholderimage}
-                alt="Profile"
-                width={150}
-                height={150}
-                style={{
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  marginBottom: "16px",
-                }}
-              />
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                {profile?.first_name} {profile?.last_name}
-              </Typography>
-              <Typography color="textSecondary" sx={{ mt: 1 }}>
-                {profile?.email}
-              </Typography>
-              <Typography color="textSecondary" sx={{ mt: 1 }}>
-                {profile?.phone}
-              </Typography>
-              <Typography color="textSecondary" sx={{ mt: 1 }}>
-                {profile?.address}
-              </Typography>
-            </Box>
-          </Grid>
-
-          {/* About Me Section */}
-          <Grid item xs={12} sm={8}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              About Me
+            />
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              {profile?.first_name} {profile?.last_name}
             </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              {profile?.about_me || "No information available."}
+            <Typography color="textSecondary" sx={{ mt: 1 }}>
+              {profile?.email}
             </Typography>
-          </Grid>
+            <Typography color="textSecondary" sx={{ mt: 1 }}>
+              {profile?.phone}
+            </Typography>
+            <Typography color="textSecondary" sx={{ mt: 1 }}>
+              {profile?.address}
+            </Typography>
+          </Box>
         </Grid>
-      </Box>
-    </>
+
+        {/* About Me Section */}
+        <Grid item xs={12} sm={8}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            About Me
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            {profile?.about_me || "No information available."}
+          </Typography>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Grid, Card, Typography, Avatar, Tabs, Tab, Box } from "@mui/material";
 import Image from "next/image";
-import Navbar from "../../components/Navbar";
 import placeholder from "../../../public/images/placeholder.jpg";
 
 const PatientProfile: React.FC = () => {
@@ -15,9 +14,6 @@ const PatientProfile: React.FC = () => {
 
   return (
     <>
-      {/* Navbar */}
-      <Navbar />
-
       {/* Main Content */}
       <Grid container sx={{ height: "100vh" }}>
         {/* Left Sidebar: Profile Section */}

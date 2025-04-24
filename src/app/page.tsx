@@ -8,8 +8,6 @@ import HeroSection from "@/components/HeroSection";
 import MetricsBanner from "@/components/MetricsBanner";
 import Carousel from "@/components/Carousel";
 import CtaSection from "@/components/CtaSection";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
 
 const SERVICE_ITEMS = [
   {
@@ -90,7 +88,6 @@ const TESTIMONIALS = [
 const LandingPage: React.FC = () => {
   return (
     <Box>
-      <Navbar />
       <HeroSection
         title="Find Your Perfect Dietitian"
         subtitle="Connect with expert dietitians and start your journey to a healthier you."
@@ -124,7 +121,6 @@ const LandingPage: React.FC = () => {
           variant: "outlined",
         }}
       />
-      <Footer />
     </Box>
   );
 };
