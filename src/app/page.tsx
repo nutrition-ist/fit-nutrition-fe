@@ -4,18 +4,10 @@ import Image from "next/image";
 import { Box } from "@mui/material";
 import FeatureSection from "@/components/FeatureSection";
 import ServicesSection from "@/components/ServicesSection";
-import MainAppBar from "@/components/MainAppBar";
 import HeroSection from "@/components/HeroSection";
 import MetricsBanner from "@/components/MetricsBanner";
 import Carousel from "@/components/Carousel";
 import CtaSection from "@/components/CtaSection";
-import Footer from "@/components/Footer";
-
-const NAV_LINKS = [
-  { label: "Find a Dietitian", href: "/dietitian" },
-  { label: "Blog", href: "/blog" },
-  { label: "Login", href: "/login" },
-];
 
 const SERVICE_ITEMS = [
   {
@@ -96,7 +88,6 @@ const TESTIMONIALS = [
 const LandingPage: React.FC = () => {
   return (
     <Box>
-      <MainAppBar links={NAV_LINKS} />
       <HeroSection
         title="Find Your Perfect Dietitian"
         subtitle="Connect with expert dietitians and start your journey to a healthier you."
@@ -130,7 +121,6 @@ const LandingPage: React.FC = () => {
           variant: "outlined",
         }}
       />
-      <Footer />
     </Box>
   );
 };

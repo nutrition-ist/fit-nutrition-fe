@@ -7,9 +7,7 @@ import KebabDiningOutlinedIcon from "@mui/icons-material/KebabDiningOutlined";
 import YardOutlinedIcon from "@mui/icons-material/YardOutlined";
 import LunchDiningOutlinedIcon from "@mui/icons-material/LunchDiningOutlined";
 import Link from "next/link";
-
 import SearchBar from "../../components/SearchBar";
-import Navbar from "../../components/Navbar";
 
 // Section data
 const sections = [
@@ -26,9 +24,6 @@ const sections = [
 export default function RecipesPage() {
   return (
     <>
-      {/* Navbar */}
-      <Navbar />
-
       {/* Page Content */}
       <Grid
         container

@@ -83,7 +83,23 @@ const LoginPage: React.FC = () => {
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
       localStorage.setItem("username", formData.username);
-
+      /* 
+          Gelecek kutsiye idea, ilk başta dietitian endpointini deneriz access var ise,(200response ise) role=dietitian, 404 ya da 403 gelirse patient olur direkt.
+          Çünkü hesabı varsa visitor değil sadece accesi yok demek ki patient, backende sor. 
+          Şöyle bişi
+          let role: "dietitian" | "patient" = "patient";
+          try {
+            await axios.get(`${apiUrl}dietitian/me/`, {
+              headers: { Authorization: `Bearer ${access}` },
+            });
+            role = "dietitian";
+          } catch {
+            role = "patient";
+          }
+          localStorage.setItem("role", role);
+          */
+      const isDietitian = redirectUrl === "dietitian-dashboard";
+      localStorage.setItem("role", isDietitian ? "dietitian" : "patient");
       setSuccessMessage("Login successful!");
 
       window.location.href = `/${redirectUrl}`;
@@ -113,7 +129,7 @@ const LoginPage: React.FC = () => {
         refresh: refreshToken,
       });
 
-      localStorage.setItem("accessToken", response.data.access); 
+      localStorage.setItem("accessToken", response.data.access);
       return true;
     } catch (error) {
       console.error("Failed to refresh access token:", error);

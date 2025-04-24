@@ -44,9 +44,8 @@ const DietitianProfile: React.FC = () => {
           {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
-          
         );
-        console.log(response)
+        console.log(response);
         setProfile(response.data.dietician);
       } catch (err: unknown) {
         if (err instanceof Error) {

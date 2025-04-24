@@ -3,7 +3,6 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import axios from "axios";
-
 interface DietitianFormData {
   email: string;
   username: string;
