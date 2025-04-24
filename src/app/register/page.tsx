@@ -3,6 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { TextField, Button, Typography, Box } from "@mui/material";
 import axios from "axios";
+import Navbar from "@/components/Navbar";
 
 interface DietitianFormData {
   email: string;
@@ -71,102 +72,105 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        maxWidth: 400,
-        margin: "0 auto",
-        mt: 5,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
-    >
-      <Typography variant="h4" textAlign="center">
-        Dietitian Registration
-      </Typography>
-
-      <TextField
-        label="Email"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Username"
-        name="username"
-        value={formData.username}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="First Name"
-        name="first_name"
-        value={formData.first_name}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Last Name"
-        name="last_name"
-        value={formData.last_name}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Password"
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Phone"
-        name="phone"
-        value={formData.phone}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Address"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      {error && (
-        <Typography color="error" textAlign="center">
-          {error}
+    <>
+      <Navbar />
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          maxWidth: 400,
+          margin: "0 auto",
+          mt: 5,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h4" textAlign="center">
+          Dietitian Registration
         </Typography>
-      )}
-      {successMessage && (
-        <Typography color="primary" textAlign="center">
-          {successMessage}
-        </Typography>
-      )}
 
-      <Button type="submit" variant="contained" color="primary" fullWidth>
-        Register
-      </Button>
-    </Box>
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="Username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="First Name"
+          name="first_name"
+          value={formData.first_name}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="Last Name"
+          name="last_name"
+          value={formData.last_name}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="Password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="Phone"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        <TextField
+          label="Address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          fullWidth
+          required
+        />
+
+        {error && (
+          <Typography color="error" textAlign="center">
+            {error}
+          </Typography>
+        )}
+        {successMessage && (
+          <Typography color="primary" textAlign="center">
+            {successMessage}
+          </Typography>
+        )}
+
+        <Button type="submit" variant="contained" color="primary" fullWidth>
+          Register
+        </Button>
+      </Box>
+    </>
   );
 };
 

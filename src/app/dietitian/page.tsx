@@ -3,9 +3,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Box, Typography, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
-
-import InitialNavbar from "../../components/InitialNavbar";
 import DietitianCard from "@/components/DietitianCard";
+import Navbar from "@/components/Navbar";
 
 interface DietitianType {
   id: number;
@@ -188,7 +187,7 @@ const Dietitians: React.FC = () => {
 
   return (
     <>
-      <InitialNavbar />
+      <Navbar/>
       <Box
         sx={{
           maxWidth: "1400px",
