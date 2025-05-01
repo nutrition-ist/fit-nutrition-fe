@@ -70,6 +70,7 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
         sx={{
           px: 2,
           py: 1.5,
+          maxHeight: 42,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
@@ -124,6 +125,7 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
             flexWrap: "wrap",
             mb: 2,
             maxHeight: 52, // two rows max
+            minHeight: 52,
             overflow: "hidden",
           }}
         >
@@ -183,7 +185,17 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
         </Stack>
 
         {/* about text */}
-        <Typography variant="body2" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            mb: 2,
+            minHeight: 68, // ≈ 3 lines
+            display: "-webkit-box",
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
           {dietitian.about_me ??
             "Specialising in holistic nutrition to support overall well-being."}
         </Typography>
