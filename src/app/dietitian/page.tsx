@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Box, Container, Grid, CircularProgress } from "@mui/material";
+import { Box, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
 import DietitianCard from "@/components/DietitianCard";
 import FilterBar from "@/components/FilterBar";
