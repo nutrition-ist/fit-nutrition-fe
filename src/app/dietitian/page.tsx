@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Box, Container, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
-import Link from "next/link";
 import DietitianCard from "@/components/DietitianCard";
 import FilterBar from "@/components/FilterBar";
 import { ConsultType } from "@/components/ConsultTypeToggle";
@@ -150,18 +149,16 @@ const DietitiansPage: React.FC = () => {
           >
             {visibleDietitians.map((d) => (
               <Grid key={d.id} item xs={1} sm={4} md={3}>
-                <Link
-                  href={`/dietitian/${d.username}`}
-                  onClick={() =>
+                <DietitianCard
+                  dietitian={d}
+                  onCardClick={() => {
                     sessionStorage.setItem(
                       "diet_scroll_pos",
                       String(window.scrollY)
-                    )
-                  }
-                  style={{ textDecoration: "none" }}
-                >
-                  <DietitianCard dietitian={d} />
-                </Link>
+                    );
+                    window.location.assign(`/dietitian/${d.username}`);
+                  }}
+                />
               </Grid>
             ))}
           </Grid>

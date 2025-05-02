@@ -32,11 +32,11 @@ export interface Dietitian {
 
 export interface DietitianCardProps {
   dietitian: Dietitian;
-  onClick?: () => void;
+  onCardClick?: () => void;
 }
 
 /* ---------- component ---------- */
-const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onClick }) => {
+const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onCardClick }) => {
   /* availability badge text */
   const badgeText = useMemo(() => {
     if (dietitian.available === false) return null;
@@ -57,16 +57,16 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onClick }) => {
   return (
     <Card
       elevation={0}
-      onClick={onClick}
+      onClick={onCardClick}
       sx={{
-        cursor: onClick ? "pointer" : "default",
+        cursor: onCardClick ? "pointer" : "default",
         display: "flex",
         flexDirection: "column",
         height: "100%",
         borderRadius: 3,
         border: "1px solid rgba(0,0,0,0.12)",
         bgcolor: "#e6f1ef",
-        "&:hover": onClick ? { boxShadow: 4 } : undefined,
+        "&:hover": onCardClick ? { boxShadow: 4 } : undefined,
       }}
     >
       {/* ---------- header ---------- */}
