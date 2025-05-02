@@ -5,7 +5,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Stack,
-  Container,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -21,8 +20,6 @@ export interface FilterBarProps {
   showUnavailable: boolean;
   onToggleUnavailable: () => void;
   onReset: () => void;
-
-  bgcolor?: string;
 }
 
 const FilterBar: FC<FilterBarProps> = ({
@@ -34,9 +31,9 @@ const FilterBar: FC<FilterBarProps> = ({
   showUnavailable,
   onToggleUnavailable,
   onReset,
-  bgcolor = "#e6f1ef",
 }) => {
   const th = useTheme();
+  const space = (n: number) => th.spacing(n);
 
   const toggleCat = (cat: string) =>
     onSelectCategories(
@@ -46,148 +43,113 @@ const FilterBar: FC<FilterBarProps> = ({
     );
 
   return (
-    <Box sx={{ bgcolor, py: { xs: 3, md: 4 }, mb: { xs: 4, md: 6 } }}>
-      <Container maxWidth="lg">
-        {/* ---------- title ---------- */}
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: 700, textAlign: "center", mb: 3 }}
-        >
-          Find the Right Expert
-        </Typography>
+    <Box
+      sx={{
+        bgcolor: "#e6f1ef",
+        px: space(2),
+        py: { xs: 3, md: 5 },
+        mb: { xs: 3, md: 5 },
+      }}
+    >
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: space(3) }}>
+        Find the Right Expert
+      </Typography>
 
-        {/* ---------- category chips (wrap, left-aligned) ---------- */}
-        <Stack
-          direction="row"
-          spacing={1}
-          flexWrap="wrap"
-          justifyContent="flex-start"
-          sx={{ mb: 3 }}
-        >
-          {categories.map((cat) => {
-            const active = selectedCategories.includes(cat);
-            return (
-              <Chip
-                key={cat}
-                label={cat}
-                clickable
-                onClick={() => toggleCat(cat)}
-                sx={{
-                  borderRadius: 999,
-                  fontWeight: 600,
-                  px: 1.5,
-                  border: "1px solid #007560",
-                  bgcolor: active ? "#007560" : "transparent",
-                  color: active
-                    ? th.palette.common.white
-                    : th.palette.text.primary,
-                  "&:hover": {
-                    bgcolor: active ? "#00614e" : "rgba(0,118,96,0.08)",
-                  },
-                }}
-              />
-            );
-          })}
-
-          {/* utility chips */}
-          <Chip
-            label="See All Categories"
-            variant="outlined"
-            clickable
-            sx={{
-              borderRadius: 999,
-              fontWeight: 600,
-              border: "1px solid #007560",
-              mr: 1,
-              mt: 1,
-            }}
-          />
-
-          <Chip
-            label="Reset Filters"
-            clickable
-            onClick={onReset}
-            sx={{
-              borderRadius: 999,
-              fontWeight: 600,
-              border: "1px solid #007560",
-              bgcolor: "#007560",
-              color: th.palette.common.white,
-              "&:hover": { bgcolor: "#00614e" },
-              mt: 1,
-            }}
-          />
-        </Stack>
-
-        {/* ---------- toggle row ---------- */}
-        <Box
+      {/* chip row */}
+      <Stack
+        direction="row"
+        spacing={1}
+        flexWrap="wrap"
+        sx={{ mb: space(3), rowGap: space(1) }}
+      >
+        {categories.map((c) => {
+          const active = selectedCategories.includes(c);
+          return (
+            <Chip
+              key={c}
+              label={c}
+              clickable
+              onClick={() => toggleCat(c)}
+              sx={{
+                borderRadius: 999,
+                fontWeight: 600,
+                px: 1.25,
+                border: "1px solid #007560",
+                bgcolor: active ? "#007560" : "transparent",
+                color: active ? "#fff" : "inherit",
+              }}
+            />
+          );
+        })}
+        <Chip
+          label="Reset"
+          onClick={onReset}
+          clickable
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between", // left-start & right-end
-            flexWrap: "wrap",
-            gap: 2,
+            borderRadius: 999,
+            fontWeight: 600,
+            border: "1px solid #007560",
+            bgcolor: "#007560",
+            color: "#fff",
+            "&:hover": { bgcolor: "#00614e" },
+            ml: "auto",
           }}
-        >
-          {/* left segment toggle */}
-          <ToggleButtonGroup
-            exclusive
-            value={consultType}
-            onChange={(_, v) => v && onConsultTypeChange(v)}
-            sx={{ flexShrink: 0 }}
-          >
-            {["in-person", "online", "all"].map((v) => (
-              <ToggleButton
-                key={v}
-                value={v}
-                disableRipple
-                sx={{
-                  textTransform: "none",
-                  px: 4,
-                  fontWeight: 600,
-                  borderRadius: 999,
-                  border: "1px solid #007560",
-                  color: "#007560",
-                  "&.Mui-selected": {
-                    bgcolor: "#007560",
-                    color: th.palette.common.white,
-                    "&:hover": { bgcolor: "#00614e" },
-                  },
-                }}
-              >
-                {v === "in-person"
-                  ? "In-Person"
-                  : v === "online"
-                  ? "Online"
-                  : "Show All"}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+        />
+      </Stack>
 
-          {/* right pill */}
-          <Chip
-            label={
-              showUnavailable ? "Showing All" : "Hide Unavailable Dietitians"
-            }
-            clickable
-            onClick={onToggleUnavailable}
-            sx={{
-              borderRadius: 999,
-              fontWeight: 600,
-              px: 2,
-              border: "1px solid #007560",
-              bgcolor: showUnavailable ? "transparent" : "#007560",
-              color: showUnavailable
-                ? th.palette.text.primary
-                : th.palette.common.white,
-              "&:hover": {
-                bgcolor: showUnavailable ? "rgba(0,118,96,0.08)" : "#00614e",
-              },
-              ml: "auto",
-            }}
-          />
-        </Box>
-      </Container>
+      {/* toggle row */}
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: space(2) }}>
+        <ToggleButtonGroup
+          exclusive
+          value={consultType}
+          onChange={(_, v) => v && onConsultTypeChange(v)}
+          sx={{ flexShrink: 0 }}
+        >
+          {["in-person", "online", "all"].map((v) => (
+            <ToggleButton
+              key={v}
+              value={v}
+              sx={{
+                textTransform: "none",
+                px: { xs: 2, sm: 4 },
+                fontWeight: 600,
+                borderRadius: 999,
+                border: "1px solid #007560 !important",
+                color: "#007560",
+                "&.Mui-selected": {
+                  bgcolor: "#007560",
+                  color: "#fff",
+                  "&:hover": { bgcolor: "#00614e" },
+                },
+              }}
+            >
+              {v === "in-person"
+                ? "In-Person"
+                : v === "online"
+                ? "Online"
+                : "Show All"}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+
+        <Chip
+          label={showUnavailable ? "Showing All" : "Hide Unavailable"}
+          clickable
+          onClick={onToggleUnavailable}
+          sx={{
+            ml: "auto",
+            borderRadius: 999,
+            fontWeight: 600,
+            px: 2,
+            border: "1px solid #007560",
+            bgcolor: showUnavailable ? "transparent" : "#007560",
+            color: showUnavailable ? "#000" : "#fff",
+            "&:hover": {
+              bgcolor: showUnavailable ? "#f1faf8" : "#00614e",
+            },
+          }}
+        />
+      </Box>
     </Box>
   );
 };

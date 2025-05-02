@@ -32,11 +32,12 @@ export interface Dietitian {
 
 export interface DietitianCardProps {
   dietitian: Dietitian;
+  onClick?: () => void;
 }
 
 /* ---------- component ---------- */
-const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
-  /* availability badge */
+const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onClick }) => {
+  /* availability badge text */
   const badgeText = useMemo(() => {
     if (dietitian.available === false) return null;
     if (dietitian.next_available_date) {
@@ -56,13 +57,16 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
   return (
     <Card
       elevation={0}
+      onClick={onClick}
       sx={{
+        cursor: onClick ? "pointer" : "default",
         display: "flex",
         flexDirection: "column",
         height: "100%",
         borderRadius: 3,
         border: "1px solid rgba(0,0,0,0.12)",
         bgcolor: "#e6f1ef",
+        "&:hover": onClick ? { boxShadow: 4 } : undefined,
       }}
     >
       {/* ---------- header ---------- */}
@@ -124,7 +128,7 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
           sx={{
             flexWrap: "wrap",
             mb: 2,
-            maxHeight: 52, // two rows max
+            maxHeight: 52,
             minHeight: 52,
             overflow: "hidden",
           }}
@@ -177,19 +181,18 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
                   fontWeight: 600,
                   bgcolor: "#007560",
                   color: "#fff",
-                  cursor: "pointer",
                 }}
               />
             </Tooltip>
           )}
         </Stack>
 
-        {/* about text */}
+        {/* about text (fixed 3-line space) */}
         <Typography
           variant="body2"
           sx={{
             mb: 2,
-            minHeight: 68, // ≈ 3 lines
+            minHeight: 68,
             display: "-webkit-box",
             WebkitLineClamp: 3,
             WebkitBoxOrient: "vertical",
@@ -200,7 +203,7 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian }) => {
             "Specialising in holistic nutrition to support overall well-being."}
         </Typography>
 
-        {/* ---------- CTAs ---------- */}
+        {/* CTAs */}
         <Stack spacing={1}>
           <Button
             fullWidth

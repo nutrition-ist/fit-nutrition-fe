@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Box, Container, Grid, CircularProgress } from "@mui/material";
 import axios from "axios";
-
+import Link from "next/link";
 import DietitianCard from "@/components/DietitianCard";
 import FilterBar from "@/components/FilterBar";
 import { ConsultType } from "@/components/ConsultTypeToggle";
@@ -38,10 +38,8 @@ const CATEGORY_LIST = [
   "Sports Supplementation",
   "Corporate Wellness Programs",
 ];
-
-/* ---------- component ---------- */
 const DietitiansPage: React.FC = () => {
-  /* pagination */
+  /* pagination state */
   const [dietitians, setDietitians] = useState<Dietitian[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -53,7 +51,7 @@ const DietitiansPage: React.FC = () => {
   const [consultType, setConsultType] = useState<ConsultType>("all");
   const [showUnavailable, setShowUnavailable] = useState(false);
 
-  /* -------- fetch */
+  /* ---------- fetch page ---------- */
   const fetchPage = async (p: number) => {
     if (loading || !hasMore) return;
     try {
@@ -78,11 +76,36 @@ const DietitiansPage: React.FC = () => {
     }
   };
 
+  /* initial load */
   useEffect(() => {
     fetchPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* visible list */
+  const visibleDietitians = useMemo(() => {
+    return dietitians.filter((d) => {
+      if (!showUnavailable && d.available === false) return false;
+      if (
+        categories.length &&
+        !categories.every((c) => d.qualifications.includes(c))
+      )
+        return false;
+      if (consultType === "online" && d.online_booking === false) return false;
+      return true;
+    });
+  }, [dietitians, categories, consultType, showUnavailable]);
+
+  /* restore scroll */
+  useEffect(() => {
+    const saved = sessionStorage.getItem("diet_scroll_pos");
+    if (saved) {
+      window.scrollTo({ top: Number(saved), behavior: "instant" });
+      sessionStorage.removeItem("diet_scroll_pos");
+    }
+  }, [visibleDietitians.length]);
+
+  /* infinite scroll sentinel */
   useEffect(() => {
     if (!loaderRef.current) return;
     const io = new IntersectionObserver(
@@ -98,33 +121,13 @@ const DietitiansPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaderRef, loading, hasMore, page]);
 
-  /* -------- derived list ---------- */
-  const visibleDietitians = useMemo(() => {
-    return dietitians.filter((d) => {
-      if (!showUnavailable && d.available === false) return false;
-
-      if (
-        categories.length &&
-        !categories.every((c) => d.qualifications.includes(c))
-      ) {
-        return false;
-      }
-
-      if (consultType === "online" && d.online_booking === false) return false;
-      // (in-person flag not yet implemented)
-
-      return true;
-    });
-  }, [dietitians, categories, consultType, showUnavailable]);
-
-  /* -------- reset everything ---------- */
   const resetFilters = () => {
     setCategories([]);
     setConsultType("all");
     setShowUnavailable(false);
   };
 
-  /* -------- render ---------- */
+  /* ---------- render ---------- */
   return (
     <>
       <FilterBar
@@ -140,10 +143,25 @@ const DietitiansPage: React.FC = () => {
 
       <Box sx={{ pb: 10, bgcolor: "#fafafa", minHeight: "100vh" }}>
         <Container maxWidth="lg">
-          <Grid container spacing={4}>
+          <Grid
+            container
+            spacing={{ xs: 2, sm: 3 }}
+            columns={{ xs: 1, sm: 8, md: 12 }}
+          >
             {visibleDietitians.map((d) => (
-              <Grid key={d.id} item xs={12} sm={6} md={4} lg={3}>
-                <DietitianCard dietitian={d} />
+              <Grid key={d.id} item xs={1} sm={4} md={3}>
+                <Link
+                  href={`/dietitian/${d.username}`}
+                  onClick={() =>
+                    sessionStorage.setItem(
+                      "diet_scroll_pos",
+                      String(window.scrollY)
+                    )
+                  }
+                  style={{ textDecoration: "none" }}
+                >
+                  <DietitianCard dietitian={d} />
+                </Link>
               </Grid>
             ))}
           </Grid>
@@ -159,4 +177,5 @@ const DietitiansPage: React.FC = () => {
     </>
   );
 };
+
 export default DietitiansPage;
