@@ -7,6 +7,9 @@ import DietitianCard from "@/components/DietitianCard";
 import FilterBar from "@/components/FilterBar";
 import { ConsultType } from "@/components/ConsultTypeToggle";
 
+/* ---------- helpers ---------- */
+const isBrowser = typeof window !== "undefined";
+
 /* ---------- data types ---------- */
 interface Dietitian {
   id: number;
@@ -37,20 +40,55 @@ const CATEGORY_LIST = [
   "Sports Supplementation",
   "Corporate Wellness Programs",
 ];
+
 const DietitiansPage: React.FC = () => {
-  /* pagination state */
+  /* 1️⃣  default (empty) state */
+  const [categories, setCategories] = useState<string[]>([]);
+  const [consultType, setConsultType] = useState<ConsultType>("all");
+  const [showUnavailable, setShowUnavailable] = useState(false);
+
+  /* 2️⃣  after hydration, load saved filters */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("diet_filters_categories");
+      if (raw) setCategories(JSON.parse(raw));
+
+      const type = sessionStorage.getItem("diet_filters_consultType");
+      if (type) setConsultType(type as ConsultType);
+
+      setShowUnavailable(
+        sessionStorage.getItem("diet_filters_showUnavailable") === "1"
+      );
+    } catch {
+      /* ignore parse errors */
+    }
+  }, []);
+
+  /* 3️⃣  persist whenever they change */
+  useEffect(() => {
+    sessionStorage.setItem(
+      "diet_filters_categories",
+      JSON.stringify(categories)
+    );
+  }, [categories]);
+
+  useEffect(() => {
+    sessionStorage.setItem("diet_filters_consultType", consultType);
+  }, [consultType]);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      "diet_filters_showUnavailable",
+      showUnavailable ? "1" : "0"
+    );
+  }, [showUnavailable]);
+  /* ---------- pagination ---------- */
   const [dietitians, setDietitians] = useState<Dietitian[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  /* filters */
-  const [categories, setCategories] = useState<string[]>([]);
-  const [consultType, setConsultType] = useState<ConsultType>("all");
-  const [showUnavailable, setShowUnavailable] = useState(false);
-
-  /* ---------- fetch page ---------- */
   const fetchPage = async (p: number) => {
     if (loading || !hasMore) return;
     try {
@@ -75,13 +113,34 @@ const DietitiansPage: React.FC = () => {
     }
   };
 
-  /* initial load */
   useEffect(() => {
     fetchPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* visible list */
+  /* ---------- persist filters ---------- */
+  useEffect(() => {
+    if (isBrowser)
+      sessionStorage.setItem(
+        "diet_filters_categories",
+        JSON.stringify(categories)
+      );
+  }, [categories]);
+
+  useEffect(() => {
+    if (isBrowser)
+      sessionStorage.setItem("diet_filters_consultType", consultType);
+  }, [consultType]);
+
+  useEffect(() => {
+    if (isBrowser)
+      sessionStorage.setItem(
+        "diet_filters_showUnavailable",
+        showUnavailable ? "1" : "0"
+      );
+  }, [showUnavailable]);
+
+  /* ---------- visible list ---------- */
   const visibleDietitians = useMemo(() => {
     return dietitians.filter((d) => {
       if (!showUnavailable && d.available === false) return false;
@@ -95,8 +154,9 @@ const DietitiansPage: React.FC = () => {
     });
   }, [dietitians, categories, consultType, showUnavailable]);
 
-  /* restore scroll */
+  /* ---------- restore scroll ---------- */
   useEffect(() => {
+    if (!isBrowser) return;
     const saved = sessionStorage.getItem("diet_scroll_pos");
     if (saved) {
       window.scrollTo({ top: Number(saved), behavior: "instant" });
@@ -104,7 +164,7 @@ const DietitiansPage: React.FC = () => {
     }
   }, [visibleDietitians.length]);
 
-  /* infinite scroll sentinel */
+  /* ---------- infinite scroll ---------- */
   useEffect(() => {
     if (!loaderRef.current) return;
     const io = new IntersectionObserver(
@@ -120,10 +180,16 @@ const DietitiansPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaderRef, loading, hasMore, page]);
 
+  /* ---------- reset ---------- */
   const resetFilters = () => {
     setCategories([]);
     setConsultType("all");
     setShowUnavailable(false);
+    if (isBrowser) {
+      sessionStorage.removeItem("diet_filters_categories");
+      sessionStorage.removeItem("diet_filters_consultType");
+      sessionStorage.removeItem("diet_filters_showUnavailable");
+    }
   };
 
   /* ---------- render ---------- */
@@ -152,10 +218,11 @@ const DietitiansPage: React.FC = () => {
                 <DietitianCard
                   dietitian={d}
                   onCardClick={() => {
-                    sessionStorage.setItem(
-                      "diet_scroll_pos",
-                      String(window.scrollY)
-                    );
+                    if (isBrowser)
+                      sessionStorage.setItem(
+                        "diet_scroll_pos",
+                        String(window.scrollY)
+                      );
                     window.location.assign(`/dietitian/${d.username}`);
                   }}
                 />
