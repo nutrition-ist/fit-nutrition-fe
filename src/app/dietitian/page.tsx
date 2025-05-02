@@ -94,7 +94,7 @@ const DietitiansPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${p}&page_size=8`
+        `https://hazalkaynak.pythonanywhere.com/dietitian/?page=${p}&page_size=12`
       );
 
       const newItems: Dietitian[] = res.data.results;
@@ -206,37 +206,50 @@ const DietitiansPage: React.FC = () => {
         onReset={resetFilters}
       />
 
-      <Box sx={{ pb: 10, bgcolor: "#fafafa", minHeight: "100vh" }}>
-        <Container maxWidth="lg">
-          <Grid
-            container
-            spacing={{ xs: 2, sm: 3 }}
-            columns={{ xs: 1, sm: 8, md: 12 }}
-          >
-            {visibleDietitians.map((d) => (
-              <Grid key={d.id} item xs={1} sm={4} md={3}>
-                <DietitianCard
-                  dietitian={d}
-                  onCardClick={() => {
-                    if (isBrowser)
-                      sessionStorage.setItem(
-                        "diet_scroll_pos",
-                        String(window.scrollY)
-                      );
-                    window.location.assign(`/dietitian/${d.username}`);
-                  }}
-                />
-              </Grid>
-            ))}
-          </Grid>
+      <Box
+        sx={{
+          pb: 10,
+          bgcolor: "#fafafa",
+          minHeight: "100vh",
+          px: { xs: 2, md: 4 },
+        }}
+      >
+        <Grid
+          container
+          spacing={{ xs: 2, sm: 3 }}
+          columns={{ xs: 12, sm: 12, md: 12, lg: 15, xl: 18 }}
+        >
+          {visibleDietitians.map((d) => (
+            <Grid
+              key={d.id}
+              item
+              xs={12}
+              sm={6}
+              md={4} 
+              lg={3} 
+              xl={3}
+            >
+              <DietitianCard
+                dietitian={d}
+                onCardClick={() => {
+                  if (isBrowser)
+                    sessionStorage.setItem(
+                      "diet_scroll_pos",
+                      String(window.scrollY)
+                    );
+                  window.location.assign(`/dietitian/${d.username}`);
+                }}
+              />
+            </Grid>
+          ))}
+        </Grid>
 
-          <Box ref={loaderRef} sx={{ height: 1 }} />
-          {loading && (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          )}
-        </Container>
+        <Box ref={loaderRef} sx={{ height: 1 }} />
+        {loading && (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
       </Box>
     </>
   );
