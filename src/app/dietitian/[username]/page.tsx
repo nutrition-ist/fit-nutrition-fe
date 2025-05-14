@@ -58,12 +58,13 @@ export async function generateStaticParams() {
 
 // Main Profile Page Component
 export default async function DietitianProfilePage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const profile = await fetchDietitianProfile(params.username);
+  const { username } = await paramsPromise;
 
+  const profile = await fetchDietitianProfile(username);
   if (!profile) return notFound();
 
   return (
