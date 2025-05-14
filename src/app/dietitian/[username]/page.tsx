@@ -56,7 +56,6 @@ export async function generateStaticParams() {
   return dietitians.map(({ username }) => ({ username }));
 }
 
-export const dynamicParams = true;
 // Main Profile Page Component
 export default async function DietitianProfilePage({
   params: paramsPromise,
