@@ -1,170 +1,219 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
-import { TextField, Button, Typography, Box } from "@mui/material";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  TextField,
+  Typography,
+} from "@mui/material";
+import GoogleIcon from "@mui/icons-material/Google";
+import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
-interface DietitianFormData {
-  email: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  password: string;
-  phone: string;
+import Link from "next/link";
+import Register, { NewPatientData } from "@/components/Register";
+
+interface DietitianFormData extends NewPatientData {
   address: string;
 }
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState<DietitianFormData>({
-    email: "",
     username: "",
+    email: "",
     first_name: "",
     last_name: "",
-    password: "",
     phone: "",
+    password: "",
     address: "",
   });
-
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
+  /* ---------------------------------------------------------- */
+  /* handlers                                                   */
+  /* ---------------------------------------------------------- */
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    if (name === "confirmPassword") {
+      setConfirmPassword(value);
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleSubmit = async (e: FormEvent): Promise<void> => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
+
+    if (!agree) {
+      setError("You must accept the Terms of Service first.");
+      return;
+    }
+
+    if (confirmPassword !== formData.password) {
+      setError("Passwords do not match.");
+      return;
+    }
 
     try {
       await axios.post(
         "https://hazalkaynak.pythonanywhere.com/register/dietician/",
         formData
       );
-
       setSuccessMessage("Dietitian registered successfully!");
       setFormData({
-        email: "",
         username: "",
+        email: "",
         first_name: "",
         last_name: "",
-        password: "",
         phone: "",
+        password: "",
         address: "",
       });
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error("Error registering", err.message);
-        setError("Failed to Register, Please try again later.");
-      } else {
-        console.error("Unexpected error:", err);
-        setError("An unexpected error occurred. Please try again later.");
-      }
+      setConfirmPassword("");
+      setAgree(false);
+    } catch {
+      setError("Failed to register, please try again later.");
     }
   };
 
+  /* ---------------------------------------------------------- */
+  /* render                                                     */
+  /* ---------------------------------------------------------- */
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
-        maxWidth: 400,
-        margin: "0 auto",
-        mt: 5,
+        width: "100%",
+        minHeight: "calc(100vh - 120px)",
         display: "flex",
-        flexDirection: "column",
-        gap: 2,
+        alignItems: "flex-start",
+        justifyContent: "center",
+        pt: 6,
       }}
     >
-      <Typography variant="h4" textAlign="center">
-        Dietitian Registration
-      </Typography>
-
-      <TextField
-        label="Email"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Username"
-        name="username"
-        value={formData.username}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="First Name"
-        name="first_name"
-        value={formData.first_name}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Last Name"
-        name="last_name"
-        value={formData.last_name}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Password"
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Phone"
-        name="phone"
-        value={formData.phone}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Address"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      {error && (
-        <Typography color="error" textAlign="center">
-          {error}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ width: 360, display: "flex", flexDirection: "column", gap: 2 }}
+      >
+        <Typography variant="h5" textAlign="center" fontWeight={600}>
+          Create Your Fitnutrition Account
         </Typography>
-      )}
-      {successMessage && (
-        <Typography color="primary" textAlign="center">
-          {successMessage}
+        <Typography
+          variant="body2"
+          textAlign="center"
+          color="text.secondary"
+          sx={{ mb: 1 }}
+        >
+          Join Fitnutrition and start managing your clients, appointments and
+          nutrition plans with ease. It only takes a minute.
         </Typography>
-      )}
 
-      <Button type="submit" variant="contained" color="primary" fullWidth>
-        Register
-      </Button>
+        {/* Social auth */}
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<GoogleIcon />}
+          sx={{
+            textTransform: "none",
+            borderRadius: 12,
+            justifyContent: "flex-start",
+            pl: 1.5,
+          }}
+        >
+          Register with Google
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<FacebookIcon />}
+          sx={{
+            textTransform: "none",
+            borderRadius: 12,
+            justifyContent: "flex-start",
+            pl: 1.5,
+          }}
+        >
+          Register with Facebook
+        </Button>
+
+        <Divider sx={{ my: 1 }}>Or register with email</Divider>
+
+        {/* Shared input block */}
+        <Register
+          newPatient={formData}
+          registerError={null}
+          onInputChange={handleChange}
+        />
+
+        {/* Confirm password + address - sit outside shared block so RegisterPatient isn't affected */}
+        <TextField
+          variant="standard"
+          fullWidth
+          margin="dense"
+          label="Confirm Password"
+          name="confirmPassword"
+          type="password"
+          value={confirmPassword}
+          onChange={handleChange}
+          required
+        />
+        <TextField
+          variant="standard"
+          fullWidth
+          margin="dense"
+          label="Address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          required
+        />
+
+        {/* Terms */}
+        <FormControlLabel
+          control={
+            <Checkbox checked={agree} onChange={(_, v) => setAgree(v)} />
+          }
+          label={
+            <Typography variant="caption">
+              I agree to the <Link href="/terms">Terms of Service</Link> and
+              <Link href="/privacy"> Privacy Policy</Link>.
+            </Typography>
+          }
+          sx={{ alignItems: "flex-start" }}
+        />
+
+        {error && (
+          <Typography color="error" textAlign="center" variant="body2">
+            {error}
+          </Typography>
+        )}
+        {successMessage && (
+          <Typography color="primary" textAlign="center" variant="body2">
+            {successMessage}
+          </Typography>
+        )}
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          sx={{ borderRadius: 12, py: 1 }}
+        >
+          Create Account
+        </Button>
+
+        <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
+          Already have a Fitnutrition account? <Link href="/login">Log In</Link>
+        </Typography>
+      </Box>
     </Box>
   );
 };
