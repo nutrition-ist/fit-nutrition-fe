@@ -73,8 +73,8 @@ export default async function DietitianProfilePage({
   }
   if (!profile) {
     profile = await fetchDietitianProfile(username);
+    if (!profile) return notFound();
   }
-  if (!profile) return notFound();
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
