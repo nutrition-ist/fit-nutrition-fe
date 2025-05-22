@@ -220,23 +220,25 @@ const DietitiansPage: React.FC = () => {
           columns={{ xs: 12, sm: 12, md: 12, lg: 15, xl: 18 }}
         >
           {visibleDietitians.map((d) => (
-            <Grid
-              key={d.id}
-              item
-              xs={12}
-              sm={6}
-              md={4} 
-              lg={3} 
-              xl={3}
-            >
+            <Grid key={d.id} item xs={12} sm={6} md={4} lg={3} xl={3}>
               <DietitianCard
                 dietitian={d}
                 onCardClick={() => {
-                  if (isBrowser)
+                  if (isBrowser) {
                     sessionStorage.setItem(
                       "diet_scroll_pos",
                       String(window.scrollY)
                     );
+                    sessionStorage.setItem(
+                      `dietitian_${d.username}`,
+                      JSON.stringify(d)
+                    );
+                    sessionStorage.setItem(
+                      "diet_scroll_pos",
+                      String(window.scrollY)
+                    );
+                  }
+
                   window.location.assign(`/dietitian/${d.username}`);
                 }}
               />
