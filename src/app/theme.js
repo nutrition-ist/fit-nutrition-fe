@@ -14,7 +14,7 @@ const theme = createTheme({
       main: "#81c784", // Light green for success indicators
     },
     background: {
-      default: "#f0fdf4", // Light green background
+      default: "#ffffff", // White background
       paper: "#ffffff", // White background for cards
     },
   },
