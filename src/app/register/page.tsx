@@ -36,6 +36,26 @@ const RegisterPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   /* ---------------------------------------------------------- */
+  /* helpers                                                    */
+  /* ---------------------------------------------------------- */
+  const passwordRulesMet = (() => {
+    const p = formData.password;
+    return (
+      p.length >= 8 &&
+      /[A-Z]/.test(p) &&
+      /[a-z]/.test(p) &&
+      /[0-9]/.test(p) &&
+      /[^A-Za-z0-9]/.test(p)
+    );
+  })();
+
+  const allGood =
+    agree &&
+    passwordRulesMet &&
+    confirmPassword === formData.password &&
+    Object.values(formData).every((v) => v !== "");
+
+  /* ---------------------------------------------------------- */
   /* handlers                                                   */
   /* ---------------------------------------------------------- */
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -49,18 +69,10 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!allGood) return;
+
     setError(null);
     setSuccessMessage(null);
-
-    if (!agree) {
-      setError("You must accept the Terms of Service first.");
-      return;
-    }
-
-    if (confirmPassword !== formData.password) {
-      setError("Passwords do not match.");
-      return;
-    }
 
     try {
       await axios.post(
@@ -153,7 +165,7 @@ const RegisterPage: React.FC = () => {
           onInputChange={handleChange}
         />
 
-        {/* Confirm password + address - sit outside shared block so RegisterPatient isn't affected */}
+        {/* Confirm password + address */}
         <TextField
           variant="standard"
           fullWidth
@@ -164,6 +176,9 @@ const RegisterPage: React.FC = () => {
           value={confirmPassword}
           onChange={handleChange}
           required
+          error={
+            confirmPassword.length > 0 && confirmPassword !== formData.password
+          }
         />
         <TextField
           variant="standard"
@@ -206,6 +221,7 @@ const RegisterPage: React.FC = () => {
           variant="contained"
           fullWidth
           sx={{ borderRadius: 12, py: 1 }}
+          disabled={!allGood}
         >
           Create Account
         </Button>
