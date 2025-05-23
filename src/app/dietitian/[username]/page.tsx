@@ -64,8 +64,17 @@ export default async function DietitianProfilePage({
 }) {
   const { username } = await paramsPromise;
 
-  const profile = await fetchDietitianProfile(username);
-  if (!profile) return notFound();
+  let profile: DietitianProfile | null = null;
+  if (typeof window !== "undefined") {
+    const cached = sessionStorage.getItem(`dietitian_${username}`);
+    if (cached) {
+      profile = JSON.parse(cached);
+    }
+  }
+  if (!profile) {
+    profile = await fetchDietitianProfile(username);
+    if (!profile) return notFound();
+  }
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
