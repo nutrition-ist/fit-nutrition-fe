@@ -167,7 +167,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Confirm password + address */}
         <TextField
-          variant="standard"
+          variant="outlined"
           fullWidth
           margin="dense"
           label="Confirm Password"
@@ -181,7 +181,7 @@ const RegisterPage: React.FC = () => {
           }
         />
         <TextField
-          variant="standard"
+          variant="outlined"
           fullWidth
           margin="dense"
           label="Address"
@@ -226,7 +226,7 @@ const RegisterPage: React.FC = () => {
           Create Account
         </Button>
 
-        <Typography variant="body2" textAlign="center" sx={{ mt: 1 }}>
+        <Typography variant="body2" textAlign="center" sx={{ mt: 1, mb: 3 }}>
           Already have a Fitnutrition account? <Link href="/login">Log In</Link>
         </Typography>
       </Box>

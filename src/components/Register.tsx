@@ -1,11 +1,11 @@
 "use client";
 
 import React, { ChangeEvent, FC } from "react";
-import { TextField, Typography, Box, Stack } from "@mui/material";
+import { Stack, TextField, Typography, Box } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 
-/** Fields needed by the shared register form. */
+/* ---------- types (unchanged) ---------- */
 export interface NewPatientData {
   username: string;
   email: string;
@@ -14,15 +14,13 @@ export interface NewPatientData {
   phone: string;
   password: string;
 }
-
-/** Props expected by the component (unchanged, so RegisterPatient.tsx keeps working). */
 interface RegisterProps {
   newPatient: NewPatientData;
   registerError: string | null;
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-/** Helper to render one rule line with an icon */
+/* ---------- helper ---------- */
 const Rule: FC<{ ok: boolean; children: string }> = ({ ok, children }) => (
   <Stack direction="row" spacing={0.5} alignItems="center">
     {ok ? (
@@ -30,15 +28,13 @@ const Rule: FC<{ ok: boolean; children: string }> = ({ ok, children }) => (
     ) : (
       <CancelOutlinedIcon fontSize="inherit" color="error" />
     )}
-    <Typography variant="caption" color={ok ? "success.main" : "error"}>
+    <Typography variant="caption" color={ok ? "success.main" : "error.main"}>
       {children}
     </Typography>
   </Stack>
 );
 
-/**
- * Pure presentational block – renders inputs + live password requirement list.
- */
+/* ---------- component ---------- */
 const Register: FC<RegisterProps> = ({
   newPatient,
   registerError,
@@ -53,7 +49,6 @@ const Register: FC<RegisterProps> = ({
     number: /[0-9]/.test(password),
     special: /[^A-Za-z0-9]/.test(password),
   };
-
   const allValid =
     rules.length &&
     rules.uppercase &&
@@ -61,76 +56,82 @@ const Register: FC<RegisterProps> = ({
     rules.number &&
     rules.special;
 
+  /* text-field style snippet: slightly more rounded outline */
+  const tfSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: 2 },
+  };
+
   return (
     <>
-      {/* Core inputs */}
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="Username"
-        name="username"
-        value={newPatient.username}
-        onChange={onInputChange}
-        required
-      />
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="Email Address"
-        name="email"
-        type="email"
-        value={newPatient.email}
-        onChange={onInputChange}
-        required
-      />
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="First Name"
-        name="first_name"
-        value={newPatient.first_name}
-        onChange={onInputChange}
-        required
-      />
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="Last Name"
-        name="last_name"
-        value={newPatient.last_name}
-        onChange={onInputChange}
-        required
-      />
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="Phone"
-        name="phone"
-        value={newPatient.phone}
-        onChange={onInputChange}
-        required
-      />
-      <TextField
-        variant="standard"
-        fullWidth
-        margin="dense"
-        label="Password"
-        name="password"
-        type="password"
-        value={password}
-        onChange={onInputChange}
-        required
-        error={password.length > 0 && !allValid}
-      />
+      <Stack spacing={3}>
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="Username"
+          name="username"
+          value={newPatient.username}
+          onChange={onInputChange}
+        />
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="Email Address"
+          name="email"
+          type="email"
+          value={newPatient.email}
+          onChange={onInputChange}
+        />
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="First Name"
+          name="first_name"
+          value={newPatient.first_name}
+          onChange={onInputChange}
+        />
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="Last Name"
+          name="last_name"
+          value={newPatient.last_name}
+          onChange={onInputChange}
+        />
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="Phone"
+          name="phone"
+          value={newPatient.phone}
+          onChange={onInputChange}
+        />
+        <TextField
+          variant="outlined"
+          fullWidth
+          required
+          sx={tfSx}
+          label="Password"
+          name="password"
+          type="password"
+          value={password}
+          onChange={onInputChange}
+          error={password.length > 0 && !allValid}
+        />
+      </Stack>
 
-      {/* Live requirement checklist */}
+      {/* live password checklist */}
       {password.length > 0 && (
-        <Box sx={{ pl: 3, mb: 1 }}>
+        <Box sx={{ pl: 2, mt: 1 }}>
           <Rule ok={rules.length}>Minimum 8 characters</Rule>
           <Rule ok={rules.uppercase}>Contains an uppercase letter</Rule>
           <Rule ok={rules.lowercase}>Contains a lowercase letter</Rule>
@@ -140,7 +141,7 @@ const Register: FC<RegisterProps> = ({
       )}
 
       {registerError && (
-        <Typography color="error" textAlign="center" variant="body2">
+        <Typography color="error" textAlign="center" mt={1} variant="body2">
           {registerError}
         </Typography>
       )}
