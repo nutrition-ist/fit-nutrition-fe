@@ -141,7 +141,7 @@ const LoginPage: React.FC = () => {
           maxWidth: 440,
           mx: "auto",
           p: 5,
-          border: 1,
+          border: 0,
           borderColor: "divider",
           bgcolor: "background.paper",
         }}
