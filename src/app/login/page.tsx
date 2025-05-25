@@ -1,143 +1,130 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
-import { TextField, Button, Typography, Box } from "@mui/material";
-import Link from "next/link";
+import {
+  Box,
+  Button,
+  Card,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import GoogleIcon from "@mui/icons-material/Google";
+import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
 
 interface LoginFormData {
-  username: string;
+  username: string; //still called “username” for the API, but its email
   password: string;
 }
 
+const pillBtn = {
+  borderRadius: 99,
+  textTransform: "none",
+  fontWeight: 600,
+};
+
+const socialBtn = {
+  ...pillBtn,
+  borderColor: "success.main",
+  color: "success.main",
+  "&:hover": {
+    bgcolor: "success.main",
+    color: "#fff",
+    borderColor: "success.main",
+  },
+};
+
 const LoginPage: React.FC = () => {
+  /* ---------------- state ---------------- */
   const [formData, setFormData] = useState<LoginFormData>({
     username: "",
     password: "",
   });
+  const [keepMeLogged, setKeepMeLogged] = useState(false);
+  const [msg, setMsg] = useState<{ ok?: string; err?: string }>({});
+  const [redirectUrl, setRedirectUrl] = useState("dietitian-dashboard");
 
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [redirectUrl, setRedirectUrl] = useState<string>("dietitian-dashboard");
-
+  /* ---------------- token check on mount ---------------- */
   useEffect(() => {
-    const checkToken = async () => {
+    (async () => {
       const token = localStorage.getItem("accessToken");
-      const queryParams = new URLSearchParams(window.location.search);
-      const redirect = queryParams.get("redirect") || "dietitian-dashboard";
+      const qp = new URLSearchParams(window.location.search);
+      const dest = qp.get("redirect") || "dietitian-dashboard";
+      setRedirectUrl(dest);
 
-      setRedirectUrl(redirect);
-
-      if (!token) {
-        return;
-      }
+      if (!token) return;
 
       try {
-        const apiUrl =
+        const api =
           process.env.NEXT_PUBLIC_API_URL ||
           "https://hazalkaynak.pythonanywhere.com/";
-
-        await axios.get(`${apiUrl}/token/verify/`, {
+        await axios.get(`${api}/token/verify/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        // If token is valid, redirect
-        window.location.href = `/${redirect}`;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        console.warn("Access token expired. Trying to refresh...");
+        window.location.href = `/${dest}`;
+      } catch {
         const refreshed = await refreshAccessToken();
-
-        if (!refreshed) {
-          logoutUser(); // Logout if refresh fails
-        }
+        if (!refreshed) logoutUser();
       }
-    };
-
-    checkToken();
+    })();
   }, []);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+  /* ---------------- helpers ---------------- */
+  const onChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
+    setMsg({});
 
     try {
-      const apiUrl =
+      const api =
         process.env.NEXT_PUBLIC_API_URL ||
         "https://hazalkaynak.pythonanywhere.com/";
+      const { data } = await axios.post(`${api}/token/`, formData);
 
-      const response = await axios.post(`${apiUrl}/token/`, formData);
-
-      const { access, refresh } = response.data;
-      localStorage.setItem("accessToken", access);
-      localStorage.setItem("refreshToken", refresh);
+      localStorage.setItem("accessToken", data.access);
+      localStorage.setItem("refreshToken", data.refresh);
       localStorage.setItem("username", formData.username);
-      /* 
-          Gelecek kutsiye idea, ilk başta dietitian endpointini deneriz access var ise,(200response ise) role=dietitian, 404 ya da 403 gelirse patient olur direkt.
-          Çünkü hesabı varsa visitor değil sadece accesi yok demek ki patient, backende sor. 
-          Şöyle bişi
-          let role: "dietitian" | "patient" = "patient";
-          try {
-            await axios.get(`${apiUrl}dietitian/me/`, {
-              headers: { Authorization: `Bearer ${access}` },
-            });
-            role = "dietitian";
-          } catch {
-            role = "patient";
-          }
-          localStorage.setItem("role", role);
-          */
-      const isDietitian = redirectUrl === "dietitian-dashboard";
-      localStorage.setItem("role", isDietitian ? "dietitian" : "patient");
-      setSuccessMessage("Login successful!");
+      localStorage.setItem(
+        "role",
+        redirectUrl === "dietitian-dashboard" ? "dietitian" : "patient"
+      );
+      setMsg({ ok: "Login successful!" });
+
+      /* optionally respect 'keep me logged in' by skipping refresh-token storage */
+      if (!keepMeLogged) localStorage.removeItem("refreshToken");
 
       window.location.href = `/${redirectUrl}`;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.detail || "Invalid username or password.");
-      } else {
-        setError("An unexpected error occurred.");
-      }
+    } catch (err) {
+      setMsg({
+        err: axios.isAxiosError(err)
+          ? err.response?.data?.detail || "Invalid username or password."
+          : "An unexpected error occurred.",
+      });
     }
   };
 
-  // Function to refresh the access token
   const refreshAccessToken = async () => {
-    const refreshToken = localStorage.getItem("refreshToken");
-
-    if (!refreshToken) {
-      return false;
-    }
+    const refresh = localStorage.getItem("refreshToken");
+    if (!refresh) return false;
 
     try {
-      const apiUrl =
+      const api =
         process.env.NEXT_PUBLIC_API_URL ||
         "https://hazalkaynak.pythonanywhere.com/";
-
-      const response = await axios.post(`${apiUrl}/token/refresh/`, {
-        refresh: refreshToken,
-      });
-
-      localStorage.setItem("accessToken", response.data.access);
+      const { data } = await axios.post(`${api}/token/refresh/`, { refresh });
+      localStorage.setItem("accessToken", data.access);
       return true;
-    } catch (error) {
-      console.error("Failed to refresh access token:", error);
+    } catch {
       return false;
     }
   };
 
-  //  Logout function
   const logoutUser = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -145,68 +132,150 @@ const LoginPage: React.FC = () => {
     window.location.href = "/login";
   };
 
+  /* ---------------- UI ---------------- */
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        maxWidth: 400,
-        margin: "0 auto",
-        mt: 5,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        boxShadow: 3,
-        p: 3,
-        borderRadius: 2,
-        backgroundColor: "background.paper",
-      }}
-    >
-      <Typography variant="h4" textAlign="center" sx={{ fontWeight: "bold" }}>
-        Login
-      </Typography>
-
-      <TextField
-        label="Username"
-        name="username"
-        value={formData.username}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      <TextField
-        label="Password"
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
-
-      {error && (
-        <Typography color="error" textAlign="center">
-          {error}
+    <Box component="form" onSubmit={handleSubmit} py={8}>
+      <Card
+        elevation={0}
+        sx={{
+          maxWidth: 440,
+          mx: "auto",
+          p: 5,
+          border: 0,
+          borderColor: "divider",
+          bgcolor: "background.paper",
+        }}
+      >
+        {/* ---------- header ---------- */}
+        <Typography variant="h4" fontWeight={700} textAlign="center" mb={1}>
+          Log In to Fitnutrition
         </Typography>
-      )}
-      {successMessage && (
-        <Typography color="primary" textAlign="center">
-          {successMessage}
+        <Typography textAlign="center" color="text.secondary" mb={4}>
+          Access your professional dashboard, manage client plans and track
+          progress.
         </Typography>
-      )}
 
-      <Button type="submit" variant="contained" color="primary" fullWidth>
-        Login
-      </Button>
-
-      <Box textAlign="center" mt={2}>
-        <Link href="/" passHref>
-          <Button variant="outlined" color="secondary">
-            Go Back Home
+        {/* ---------- social buttons ---------- */}
+        <Stack spacing={2}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<GoogleIcon />}
+            sx={socialBtn}
+          >
+            Log in with Google
           </Button>
-        </Link>
-      </Box>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<FacebookIcon />}
+            sx={socialBtn}
+          >
+            Log in with Facebook
+          </Button>
+        </Stack>
+
+        {/* ---------- divider ---------- */}
+        <Stack direction="row" alignItems="center" spacing={2} my={4}>
+          <Divider sx={{ flexGrow: 1 }} />
+          <Typography variant="body2" fontWeight={500}>
+            Or login with email
+          </Typography>
+          <Divider sx={{ flexGrow: 1 }} />
+        </Stack>
+
+        {/* ---------- email & password ---------- */}
+        <Stack spacing={3}>
+          <TextField
+            variant="standard"
+            required
+            fullWidth
+            label="Email Address"
+            name="username"
+            type="email"
+            value={formData.username}
+            onChange={onChange}
+          />
+          <TextField
+            variant="standard"
+            required
+            fullWidth
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={onChange}
+          />
+        </Stack>
+
+        {/* ---------- keep me logged in ---------- */}
+        <FormControlLabel
+          sx={{ mt: 3 }}
+          control={
+            <Checkbox
+              checked={keepMeLogged}
+              onChange={(e) => setKeepMeLogged(e.target.checked)}
+              sx={{ p: 0.5 }}
+            />
+          }
+          label={<Typography variant="body2">Keep me logged in.</Typography>}
+        />
+
+        {/* ---------- messages ---------- */}
+        {msg.err && (
+          <Typography color="error" textAlign="center" mt={1}>
+            {msg.err}
+          </Typography>
+        )}
+        {msg.ok && (
+          <Typography color="primary" textAlign="center" mt={1}>
+            {msg.ok}
+          </Typography>
+        )}
+
+        {/* ---------- submit ---------- */}
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ ...pillBtn, mt: 2, py: 1.5 }}
+        >
+          Log In
+        </Button>
+
+        {/* ---------- links ---------- */}
+        <Button
+          href="/forgot-password"
+          fullWidth
+          variant="text"
+          sx={{ mt: 1, textTransform: "none" }}
+        >
+          Forgot your password?
+        </Button>
+
+        <Stack spacing={1} mt={4}>
+          <Typography variant="body2" textAlign="center">
+            New to Fitnutrition?
+          </Typography>
+          <Button
+            href="/register"
+            fullWidth
+            variant="outlined"
+            sx={{
+              ...pillBtn,
+              borderColor: "primary.main",
+              color: "primary.main",
+              "&:hover": {
+                bgcolor: "primary.main",
+                color: "#fff",
+                borderColor: "primary.main",
+              },
+            }}
+          >
+            Create an Account
+          </Button>
+        </Stack>
+      </Card>
     </Box>
   );
 };
