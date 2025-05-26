@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import {
   Box,
-  Card,
   CircularProgress,
   Grid,
   Stack,
@@ -12,7 +11,6 @@ import {
   Button,
   IconButton,
   Divider,
-  Avatar,
   TextField,
   InputAdornment,
 } from "@mui/material";
@@ -29,6 +27,7 @@ import AppointmentCard from "@/components/AppointmentCard";
 
 import RegisterPatient from "@/components/RegisterPatient";
 import SocialLinks from "@/components/SocialLinks";
+import RecipeList from "@/components/RecipeList";
 
 interface Dietitian {
   id: number;
@@ -106,7 +105,7 @@ const DietitianDashboard: React.FC = () => {
 
         setProfile({
           dietitian: res.data.dietician,
-          patients_list: res.data.patients_list ?? [], 
+          patients_list: res.data.patients_list ?? [],
           appointment_list: res.data.appointment_list ?? [],
         });
       } catch (err) {
@@ -340,40 +339,7 @@ const DietitianDashboard: React.FC = () => {
           </Button>
         </Stack>
       </Stack>
-      {/* Very light placeholder – replace with your real component later */}
-      <Stack mt={2} spacing={2}>
-        {[
-          "Greek Yoghurt Protein Bowl",
-          "Spiced Lentil Salad",
-          "Grilled Salmon & Greens",
-        ].map((name, idx) => (
-          <Card key={name} sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar
-                variant="rounded"
-                src={`/images/recipes/${idx + 1}.jpg`}
-                sx={{ width: 56, height: 56 }}
-              />
-              <Box flex={1}>
-                <Typography fontWeight={600}>{name}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {idx === 0 &&
-                    "High Protein • 320 kcal • 25g protein • 12g carbs • 18g fat"}
-                  {idx === 1 &&
-                    "Vegan, Gluten-Free • 280 kcal • 14g protein • 32g carbs • 8g fat"}
-                  {idx === 2 &&
-                    "Pescatarian • 450 kcal • 35g protein • 10g carbs • 28g fat"}
-                </Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                {idx === 0 && "15 Shares"}
-                {idx === 1 && "155 Shares"}
-                {idx === 2 && "885 Shares"}
-              </Typography>
-            </Stack>
-          </Card>
-        ))}
-      </Stack>
+      <RecipeList ownerId={profile.dietitian.id} limit={3} />
       {/* ---------- Contact ---------- */}
       <Stack mt={6} spacing={1}>
         <Typography variant="h6">Contact & Socials</Typography>
