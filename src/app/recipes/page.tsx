@@ -1,84 +1,69 @@
 "use client";
 
-import React from "react";
-import { Box, Button, Grid, Typography } from "@mui/material";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
-import KebabDiningOutlinedIcon from "@mui/icons-material/KebabDiningOutlined";
-import YardOutlinedIcon from "@mui/icons-material/YardOutlined";
-import LunchDiningOutlinedIcon from "@mui/icons-material/LunchDiningOutlined";
-import Link from "next/link";
-import SearchBar from "../../components/SearchBar";
+import React, { useEffect, useState } from "react";
+import { Box, Typography, Chip, Stack } from "@mui/material";
+import RecipeList from "@/components/RecipeList";
+import SearchBar from "@/components/SearchBar";
 
-// Section data
-const sections = [
-  { title: "Main", url: "#", icon: <MenuBookOutlinedIcon /> },
-  { title: "American", url: "#", icon: <LunchDiningOutlinedIcon /> },
-  { title: "Vegan", url: "#", icon: <MenuBookOutlinedIcon /> },
-  { title: "Vegetarian", url: "#", icon: <YardOutlinedIcon /> },
-  { title: "Deserts", url: "#", icon: <MenuBookOutlinedIcon /> },
-  { title: "Black Culture Food", url: "#", icon: <MenuBookOutlinedIcon /> },
-  { title: "Turkish", url: "#", icon: <KebabDiningOutlinedIcon /> },
-  { title: "Picnic", url: "#", icon: <MenuBookOutlinedIcon /> },
-];
+interface RecipeJSON {
+  tags: string;
+}
 
 export default function RecipesPage() {
-  return (
-    <>
-      {/* Page Content */}
-      <Grid
-        container
-        spacing={3}
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "80vh",
-        }}
-      >
-        {/* Search Bar */}
-        <Grid item xs={12} style={{ textAlign: "center" }}>
-          <SearchBar />
+  /* --- search + tag state ----------------------------------- */
+  const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [topTags, setTopTags] = useState<string[]>([]);
 
-          {/* Section Buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              margin: "0 auto",
-              maxWidth: 480,
-            }}
-          >
-            {sections.map((section) => (
-              <Box
-                key={section.title}
-                sx={{ width: 100, textAlign: "center", margin: 1 }}
-              >
-                <Link href={section.url} passHref>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      borderRadius: "50%",
-                      padding: 2,
-                      minWidth: 72,
-                      backgroundColor: "#3f51b5",
-                      "&:hover": { backgroundColor: "#303f9f" },
-                    }}
-                  >
-                    {section.icon}
-                  </Button>
-                </Link>
-                <Typography
-                  variant="caption"
-                  display="block"
-                  sx={{ marginTop: 0.5 }}
-                >
-                  {section.title}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Grid>
-      </Grid>
-    </>
+  /* --- load once: compute 8 most-used tags ------------------- */
+  useEffect(() => {
+    fetch("/last_30_recipes.json")
+      .then((r) => r.json())
+      .then((data: RecipeJSON[]) => {
+        const counts: Record<string, number> = {};
+        data.forEach((r) =>
+          JSON.parse(r.tags ?? "[]").forEach(
+            (t: string) => (counts[t] = (counts[t] ?? 0) + 1)
+          )
+        );
+        const popular = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([tag]) => tag);
+        setTopTags(popular);
+      });
+  }, []);
+
+  return (
+    <Box px={{ xs: 2, md: 6 }} py={4}>
+      <Typography variant="h4" fontWeight={600} mb={3}>
+        Recipes
+      </Typography>
+
+      {/* ---- search field ------------------------------------ */}
+      <SearchBar placeholder="Search recipes…" onSearch={(q) => setQuery(q)} />
+
+      {/* ---- top-tag chips ----------------------------------- */}
+      <Stack direction="row" spacing={1} mt={2} mb={3} flexWrap="wrap">
+        {topTags.map((tag) => (
+          <Chip
+            key={tag}
+            label={tag}
+            clickable
+            color={activeTag === tag ? "primary" : "default"}
+            variant={activeTag === tag ? "filled" : "outlined"}
+            onClick={() => setActiveTag((prev) => (prev === tag ? null : tag))}
+          />
+        ))}
+      </Stack>
+
+      {/* ---- recipe gallery ---------------------------------- */}
+      <RecipeList
+        grid
+        globalOnly // show only owner_id === 0
+        searchQuery={query}
+        tagFilter={activeTag}
+      />
+    </Box>
   );
 }
