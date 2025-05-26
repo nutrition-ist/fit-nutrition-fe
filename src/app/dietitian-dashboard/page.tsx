@@ -1,77 +1,96 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import dayjs from "dayjs";
 import {
-  Grid,
-  Card,
-  Typography,
-  Tabs,
-  Tab,
   Box,
+  Card,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  Button,
+  Grid,
   Stack,
+  Typography,
+  Button,
+  IconButton,
+  Divider,
+  Avatar,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import Image from "next/image";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import NoteAltIcon from "@mui/icons-material/NoteAlt";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import axios from "axios";
+
+import SummaryTile from "@/components/SummaryTile";
+import ClientsRibbon from "@/components/ClientsRibbon";
+import AppointmentCard from "@/components/AppointmentCard";
+
 import RegisterPatient from "@/components/RegisterPatient";
 import SocialLinks from "@/components/SocialLinks";
-import placeholderimage from "../../../public/images/placeholder.jpg";
-import AppointmentsCalendar from "@/components/AppointmentsCalendar";
+
+interface Dietitian {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  about_me?: string;
+  qualifications: string[];
+  phone: string;
+  address: string;
+  profile_picture: string | null;
+  facebook: string | null;
+  instagram: string | null;
+  x_twitter: string | null;
+  youtube: string | null;
+  whatsapp: string | null;
+}
+
+interface Patient {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  dietician: number;
+  profile_picture: string | null;
+}
+
+interface Appointment {
+  id: number;
+  patient: number;
+  dietician: number;
+  date_time: string;
+  is_active: boolean;
+}
 
 interface DietitianDashboardData {
-  dietitian: {
-    id: number;
-    username: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    about_me?: string;
-    qualifications: string[];
-    phone: string;
-    address: string;
-    profile_picture: string | null;
-    facebook: string | null;
-    instagram: string | null;
-    x_twitter: string | null;
-    youtube: string | null;
-    whatsapp: string | null;
-  };
-  patients_list: {
-    id: number;
-    username: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
-    dietician: number;
-    profile_picture: string | null;
-  }[];
-  appointment_list: {
-    id: number;
-    patient: number;
-    dietician: number;
-    date_time: string;
-    is_active: boolean;
-  }[];
+  dietitian: Dietitian;
+  patients_list: Patient[];
+  appointment_list: Appointment[];
 }
 
 const DietitianDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<number>(0);
+  /** -------------- state -------------- */
   const [profile, setProfile] = useState<DietitianDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
 
+  // dialog + view toggles
+  const [openPatientDialog, setOpenPatientDialog] = useState(false);
+  const [apptView, setApptView] = useState<"list" | "grid">("grid");
+  const [apptFilter, setApptFilter] = useState<"today" | "week" | "all">(
+    "week"
+  );
+
+  /** -------------- data fetch -------------- */
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-
     if (!token) {
-      // Redirect to login with a return URL
-      window.location.href = `/login?redirect=dietitian-dashboard`;
+      window.location.href = "/login?redirect=dietitian-dashboard";
       return;
     }
 
@@ -79,204 +98,290 @@ const DietitianDashboard: React.FC = () => {
       process.env.NEXT_PUBLIC_API_URL ||
       "https://hazalkaynak.pythonanywhere.com/";
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`${apiUrl}dietitian/me/`, {
+        const res = await axios.get(`${apiUrl}dietitian/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log(response);
+
         setProfile({
-          dietitian: response.data.dietician,
-          patients_list: response.data.patients_list,
-          appointment_list: [],
+          dietitian: res.data.dietician,
+          patients_list: res.data.patients_list ?? [], 
+          appointment_list: res.data.appointment_list ?? [],
         });
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status === 401) {
-            localStorage.removeItem("accessToken");
-            window.location.href = `/login?redirect=dietitian-dashboard`;
-          } else {
-            setError("Failed to fetch profile. Please try again later.");
-          }
-        } else if (err instanceof Error) {
-          setError(err.message);
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          localStorage.removeItem("accessToken");
+          window.location.href = "/login?redirect=dietitian-dashboard";
         } else {
-          setError("An unknown error occurred. Please try again later.");
+          setError("Failed to fetch profile. Please try again later.");
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchData();
   }, []);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePatientRegistered = (newPatient: any) => {
-    setProfile((prevProfile) => {
-      if (!prevProfile) return null;
-      return {
-        ...prevProfile,
-        patients_list: [...prevProfile.patients_list, newPatient],
-      };
-    });
-  };
-  const handleOpenDialog = () => setOpenDialog(true);
-  const handleCloseDialog = () => setOpenDialog(false);
+  /** -------------- derived counts -------------- */
+  const upcomingThisWeek = useMemo(() => {
+    if (!profile?.appointment_list) return 0;
 
+    const endOfWeek = dayjs().endOf("week");
+
+    return profile.appointment_list.filter((a) =>
+      dayjs(a.date_time).isBefore(endOfWeek)
+    ).length;
+  }, [profile]);
+
+  // mocked numbers until backend sends them
+  const newNotes = 4;
+  const needsReview = 5;
+
+  /** -------------- handlers -------------- */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleNewPatient = (p: any) =>
+    setProfile((prev) =>
+      prev ? { ...prev, patients_list: [...prev.patients_list, p] } : prev
+    );
+
+  /** -------------- render -------------- */
   if (loading) {
     return (
       <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
+        height="100vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
       >
         <CircularProgress />
       </Box>
     );
   }
-
-  if (error) {
+  if (error || !profile) {
     return (
-      <Box sx={{ textAlign: "center", mt: 5 }}>
-        <Typography color="error">{error}</Typography>
+      <Box textAlign="center" mt={5}>
+        <Typography color="error">{error ?? "Unknown error"}</Typography>
       </Box>
     );
   }
-
-  if (!profile) {
-    return null;
-  }
-
+  const appointments = profile.appointment_list ?? [];
   return (
-    <Grid container sx={{ height: "100vh" }}>
-      {/* Left Sidebar: Profile Section */}
-      <Grid
-        item
-        xs={12}
-        md={2}
-        lg={2}
-        sx={{ backgroundColor: "#f4f4f4", padding: 2 }}
+    <Box px={{ xs: 2, md: 6 }} py={4}>
+      {/* ---------- Heading ---------- */}
+      <Typography variant="h4" fontWeight={600} mb={3}>
+        Welcome Back, {profile.dietitian.first_name}!
+      </Typography>
+      {/* ---------- KPI Tiles ---------- */}
+      <Grid container spacing={2} mb={4}>
+        <Grid item xs={12} sm={4}>
+          <SummaryTile
+            icon={<CalendarMonthIcon fontSize="large" />}
+            label="Upcoming Appointments"
+            value={`${upcomingThisWeek} sessions booked this week`}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <SummaryTile
+            icon={<NoteAltIcon fontSize="large" />}
+            label="Client Notes"
+            value={`${newNotes} new notes added this week`}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <SummaryTile
+            icon={<TrendingUpIcon fontSize="large" />}
+            label="Client Progress Alerts"
+            value={`${needsReview} clients need a progress review`}
+          />
+        </Grid>
+      </Grid>
+      {/* ---------- Clients ---------- */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        mb={2}
       >
-        <Card sx={{ padding: 3, textAlign: "center" }}>
-          <Image
-            src={
-              profile.dietitian.profile_picture
-                ? `https://hazalkaynak.pythonanywhere.com/${profile.dietitian.profile_picture}`
-                : placeholderimage
-            }
-            alt="Dietitian Picture"
-            width={100}
-            height={100}
-            unoptimized
-            style={{
-              borderRadius: "50%",
-              marginBottom: "16px",
+        <Typography variant="h6">Your Clients</Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          <TextField
+            size="small"
+            placeholder="Search clients by name"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
             }}
           />
-          <Typography variant="h6">
-            {profile.dietitian.first_name} {profile.dietitian.last_name}
-          </Typography>
-          <Typography variant="body2" sx={{ marginTop: 1 }}>
-            {profile.dietitian.about_me}
-          </Typography>
-          <Typography variant="body2" sx={{ marginTop: 1 }}>
-            {profile.dietitian.qualifications?.length
-              ? profile.dietitian.qualifications.join(", ")
-              : "No qualifications available."}
-          </Typography>
-        </Card>
-      </Grid>
-
-      {/* Main Content: Tabs Section */}
-      <Grid item xs={12} md={10} lg={10} sx={{ padding: 3 }}>
-        {/* Tabs Navigation */}
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: "divider" }}
-        >
-          <Tab label="Patients" />
-          <Tab label="Appointments" />
-          <Tab label="Contact & Socials" />
-        </Tabs>
-
-        {/* Tabs Content */}
-        <Box sx={{ marginTop: 3 }}>
-          {activeTab === 0 && (
-            <Box>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Typography variant="h6">Patients</Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleOpenDialog}
-                >
-                  Register Patient
-                </Button>
-              </Stack>
-
-              <List>
-                {profile.patients_list.map((patient) => (
-                  <ListItem key={patient.id}>
-                    <ListItemText
-                      primary={`${patient.first_name} ${patient.last_name}`}
-                      secondary={patient.email}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-
-              {/* Register Patient Dialog */}
-              <RegisterPatient
-                open={openDialog}
-                onClose={handleCloseDialog}
-                onPatientRegistered={handlePatientRegistered}
-              />
-            </Box>
-          )}
-          {activeTab === 1 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Appointments
-              </Typography>
-              <AppointmentsCalendar
-                appointments={profile.appointment_list}
-                workingHours={{ startHour: 9, endHour: 17 }}
-              />
-            </Box>
-          )}
-          {activeTab === 2 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                Contact & Socials
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                Phone: {profile.dietitian.phone}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                Address: {profile.dietitian.address}
-              </Typography>
-              <SocialLinks dietitian={profile.dietitian} />
-            </Box>
-          )}
+          <IconButton
+            color="primary"
+            size="small"
+            onClick={() => setOpenPatientDialog(true)}
+          >
+            <AddIcon />
+          </IconButton>
         </Box>
+      </Stack>
+      <ClientsRibbon clients={profile.patients_list} />
+      {/* register-patient dialog (uses your unchanged component) */}
+      <RegisterPatient
+        open={openPatientDialog}
+        onClose={() => setOpenPatientDialog(false)}
+        onPatientRegistered={handleNewPatient}
+      />
+      {/* ---------- Appointments ---------- */}
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", md: "center" }}
+        mt={5}
+        mb={2}
+      >
+        <Stack direction="row" spacing={1} mb={{ xs: 1, md: 0 }}>
+          <Button
+            size="small"
+            variant={apptFilter === "today" ? "contained" : "outlined"}
+            onClick={() => setApptFilter("today")}
+          >
+            Today
+          </Button>
+          <Button
+            size="small"
+            variant={apptFilter === "week" ? "contained" : "outlined"}
+            onClick={() => setApptFilter("week")}
+          >
+            This Week
+          </Button>
+          <Button
+            size="small"
+            variant={apptFilter === "all" ? "contained" : "outlined"}
+            onClick={() => setApptFilter("all")}
+          >
+            Show All
+          </Button>
+        </Stack>
+
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            variant={apptView === "list" ? "contained" : "outlined"}
+            onClick={() => setApptView("list")}
+          >
+            List View
+          </Button>
+          <Button
+            size="small"
+            variant={apptView === "grid" ? "contained" : "outlined"}
+            onClick={() => setApptView("grid")}
+          >
+            Grid View
+          </Button>
+          <Button variant="contained" color="primary">
+            Schedule New Appointment
+          </Button>
+        </Stack>
+      </Stack>
+      {/*
+        The mock-ups show the same appointment repeated; we dedupe + filter so
+        today/week tabs behave.
+      */}
+
+      <Grid
+        container
+        spacing={apptView === "grid" ? 2 : 0}
+        direction={apptView === "list" ? "column" : "row"}
+      >
+        {appointments
+          .filter((a) => {
+            if (apptFilter === "today")
+              return dayjs(a.date_time).isSame(dayjs(), "day");
+            if (apptFilter === "week")
+              return dayjs(a.date_time).isSame(dayjs(), "week");
+            return true;
+          })
+          .map((a) =>
+            apptView === "grid" ? (
+              <Grid item xs={12} sm={6} lg={3} key={a.id}>
+                <AppointmentCard
+                  appointment={a}
+                  patients={profile.patients_list}
+                />
+              </Grid>
+            ) : (
+              <Box key={a.id}>
+                <AppointmentCard
+                  appointment={a}
+                  patients={profile.patients_list}
+                  dense
+                />
+                <Divider />
+              </Box>
+            )
+          )}
       </Grid>
-    </Grid>
+      {/* ---------- Recipes ---------- */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mt={6}
+      >
+        <Typography variant="h6">Your Recipes</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" size="small">
+            View All Recipes
+          </Button>
+          <Button variant="contained" size="small">
+            Add New Recipe
+          </Button>
+        </Stack>
+      </Stack>
+      {/* Very light placeholder – replace with your real component later */}
+      <Stack mt={2} spacing={2}>
+        {[
+          "Greek Yoghurt Protein Bowl",
+          "Spiced Lentil Salad",
+          "Grilled Salmon & Greens",
+        ].map((name, idx) => (
+          <Card key={name} sx={{ p: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                variant="rounded"
+                src={`/images/recipes/${idx + 1}.jpg`}
+                sx={{ width: 56, height: 56 }}
+              />
+              <Box flex={1}>
+                <Typography fontWeight={600}>{name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {idx === 0 &&
+                    "High Protein • 320 kcal • 25g protein • 12g carbs • 18g fat"}
+                  {idx === 1 &&
+                    "Vegan, Gluten-Free • 280 kcal • 14g protein • 32g carbs • 8g fat"}
+                  {idx === 2 &&
+                    "Pescatarian • 450 kcal • 35g protein • 10g carbs • 28g fat"}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                {idx === 0 && "15 Shares"}
+                {idx === 1 && "155 Shares"}
+                {idx === 2 && "885 Shares"}
+              </Typography>
+            </Stack>
+          </Card>
+        ))}
+      </Stack>
+      {/* ---------- Contact ---------- */}
+      <Stack mt={6} spacing={1}>
+        <Typography variant="h6">Contact & Socials</Typography>
+        <Typography>Phone: {profile.dietitian.phone}</Typography>
+        <Typography>Address: {profile.dietitian.address}</Typography>
+        <SocialLinks dietitian={profile.dietitian} />
+      </Stack>
+    </Box>
   );
 };
 
