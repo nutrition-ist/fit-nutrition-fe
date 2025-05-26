@@ -190,9 +190,9 @@ const LoginPage: React.FC = () => {
             variant="standard"
             required
             fullWidth
-            label="Email Address"
+            label="Username"
             name="username"
-            type="email"
+            type="text"
             value={formData.username}
             onChange={onChange}
           />
