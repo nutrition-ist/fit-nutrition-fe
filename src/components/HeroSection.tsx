@@ -23,7 +23,7 @@ const HeroSection: FC<HeroSectionProps> = ({
   <Box
     sx={{
       position: "relative",
-      minHeight: { xs: "60vh", md: "75vh" },
+      minHeight: { xs: "50vh", md: "60vh" },
       display: "flex",
       alignItems: "center",
       color: "common.white",
@@ -32,18 +32,27 @@ const HeroSection: FC<HeroSectionProps> = ({
   >
     <Container maxWidth="lg">
       <Box sx={{ maxWidth: 620 }}>
-        <Typography variant="h2" sx={{ fontWeight: 700, mb: 2 }}>
+        <Typography
+          variant="h1"
+          sx={{
+            fontWeight: 800,
+            mb: 2,
+            lineHeight: 1.1,
+            whiteSpace: { md: "nowrap" },
+            fontSize: { xs: "2.2rem", md: "3.5rem" },
+          }}
+        >
           {title}
         </Typography>
 
         {subtitle && (
-          <Typography variant="h6" sx={{ mb: 4 }}>
+          <Typography variant="h5" sx={{ mb: 4 }}>
             {subtitle}
           </Typography>
         )}
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <Box sx={{ flexGrow: 1, maxWidth: 420 }}>
+          <Box sx={{ flexGrow: 1, maxWidth: 420, borderRadius: 4 }}>
             <SearchBar {...searchBarProps} />
           </Box>
           {primaryCta && (
@@ -52,10 +61,11 @@ const HeroSection: FC<HeroSectionProps> = ({
                 variant="contained"
                 size="large"
                 sx={{
+                  textTransform: "none",
                   bgcolor: "#007560",
                   height: 56,
-                  borderRadius: 4,
-                  px: 4,
+                  borderRadius: 8,
+                  px: 5,
                   ":hover": { bgcolor: "#00614e" },
                 }}
               >

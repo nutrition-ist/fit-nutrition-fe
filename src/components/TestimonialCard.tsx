@@ -13,6 +13,7 @@ const TestimonialCard: FC<TestimonialCardProps> = ({ img, name, quote }) => (
   <Card
     elevation={0}
     sx={{
+      bgcolor: "rgba(255,255,255,0.9)",
       maxWidth: 340,
       mx: "auto",
       textAlign: "center",
@@ -22,8 +23,8 @@ const TestimonialCard: FC<TestimonialCardProps> = ({ img, name, quote }) => (
     }}
   >
     <Stack spacing={2} alignItems="center">
-      <Avatar src={img} alt={name} sx={{ width: 80, height: 80 }} />
-      <Typography variant="body1" sx={{ fontStyle: "italic" }}>
+      <Avatar src={img} alt={name} sx={{ width: 100, height: 100 }} />
+      <Typography variant="body1" sx={{ fontStyle: "normal" }}>
         “{quote}”
       </Typography>
       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>

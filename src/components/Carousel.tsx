@@ -71,7 +71,7 @@ export interface CarouselProps {
 const Carousel: FC<CarouselProps> = ({
   items,
   title = "Featured Comments by Clients",
-  bgcolor = "#e6f1ef",
+  bgcolor = "#ebf4f2",
 }) => {
   const settings = {
     dots: true,
