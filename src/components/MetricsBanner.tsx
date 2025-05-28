@@ -18,7 +18,7 @@ const MetricsBanner: FC<MetricsBannerProps> = ({
   <Box sx={{ bgcolor, py }}>
     <Container maxWidth="lg">
       <Typography
-        variant="h4"
+        variant="h3"
         sx={{ fontWeight: 700, textAlign: "center", mb: 6 }}
       >
         {title}

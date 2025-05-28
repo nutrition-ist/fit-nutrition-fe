@@ -34,7 +34,7 @@ const CtaSection: FC<CtaSectionProps> = ({
   primary,
   secondary,
   bgcolor = "transparent",
-  py = { xs: 8, md: 10 },
+  py = { xs: 6, md: 8 },
 }) => (
   <Box sx={{ bgcolor, py }}>
     <Container maxWidth="md" sx={{ textAlign: "center" }}>
@@ -45,7 +45,7 @@ const CtaSection: FC<CtaSectionProps> = ({
       {paragraphs.map((p, i) => (
         <Typography
           key={i}
-          variant={i === 0 ? "h6" : "subtitle1"}
+          variant="h6"
           sx={{
             mb: 3,
             maxWidth: 600,
@@ -64,24 +64,18 @@ const CtaSection: FC<CtaSectionProps> = ({
         {/* primary button */}
         <Link href={primary.href} passHref>
           <Button
-            variant={primary.variant ?? "contained"}
+            variant="contained"
             size="large"
-            endIcon={
-              primary.endIcon ??
-              (primary.variant === "contained" ? (
-                <ArrowForwardIcon />
-              ) : undefined)
-            }
             sx={{
-              bgcolor: primary.variant === "contained" ? "#007560" : undefined,
-              borderRadius: 4,
-              px: 4,
-              ":hover":
-                primary.variant === "contained"
-                  ? { bgcolor: "#00614e" }
-                  : undefined,
-              ...primary.sx,
+              textTransform: "none",
+              bgcolor: "#007560",
+              borderRadius: 8,
+              px: 5,
+              py: 2.5,
+              fontSize: "1.125rem",
+              ":hover": { bgcolor: "#00614e" },
             }}
+            endIcon={<ArrowForwardIcon />}
           >
             {primary.label}
           </Button>
@@ -91,9 +85,18 @@ const CtaSection: FC<CtaSectionProps> = ({
         {secondary && (
           <Link href={secondary.href} passHref>
             <Button
-              variant={secondary.variant ?? "outlined"}
+              variant="outlined"
               size="large"
-              sx={{ px: 4, borderRadius: 4, ...secondary.sx }}
+              sx={{
+                textTransform: "none",
+                borderRadius: 8 ,
+                px: 5,
+                py: 2.5,
+                fontSize: "1.125rem",
+                borderColor: "#007560",
+                color: "#007560",
+                ":hover": { borderColor: "#00614e", color: "#00614e" },
+              }}
             >
               {secondary.label}
             </Button>
