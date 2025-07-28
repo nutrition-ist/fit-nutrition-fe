@@ -12,9 +12,6 @@ import {
   Typography,
 } from "@mui/material";
 
-/* ------------------------------------------------------------------ */
-/*  data types                                                         */
-/* ------------------------------------------------------------------ */
 export interface Recipe {
   id: number;
   name: string;
@@ -29,9 +26,6 @@ export interface Recipe {
   private: 0 | 1;
 }
 
-/* ------------------------------------------------------------------ */
-/*  props                                                              */
-/* ------------------------------------------------------------------ */
 type Props = {
   ownerId?: number; // allow private + global merge for dashboards
   globalOnly?: boolean; // restrict to owner_id === 0
@@ -42,9 +36,6 @@ type Props = {
   onSelect?: (recipe: Recipe) => void; // click handler
 };
 
-/* ------------------------------------------------------------------ */
-/*  component                                                          */
-/* ------------------------------------------------------------------ */
 const RecipeList: React.FC<Props> = ({
   ownerId,
   globalOnly = false,
@@ -58,7 +49,6 @@ const RecipeList: React.FC<Props> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ----------------------- load once ----------------------- */
   useEffect(() => {
     fetch("/last_30_recipes.json")
       .then((r) => r.json())
@@ -67,7 +57,6 @@ const RecipeList: React.FC<Props> = ({
       .finally(() => setLoading(false));
   }, []);
 
-  /* ----------------------- filtering ----------------------- */
   const visible = useMemo(() => {
     let pool = recipes;
 
@@ -93,7 +82,6 @@ const RecipeList: React.FC<Props> = ({
     return typeof limit === "number" ? pool.slice(0, limit) : pool;
   }, [recipes, ownerId, globalOnly, searchQuery, tagFilter, limit]);
 
-  /* ----------------------- states -------------------------- */
   if (loading)
     return (
       <Box py={4} textAlign="center">
@@ -115,7 +103,6 @@ const RecipeList: React.FC<Props> = ({
       </Box>
     );
 
-  /* ----------------------- render -------------------------- */
   const Container = (grid ? Grid : Stack) as React.ElementType;
   const containerProps = grid
     ? { container: true, spacing: 2 }
