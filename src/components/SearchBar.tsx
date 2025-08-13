@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, useState, KeyboardEvent } from "react";
+import React, { FC, useState, KeyboardEvent, useEffect } from "react";
 import { Box, TextField, InputAdornment, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -8,18 +8,33 @@ export interface SearchBarProps {
   placeholder?: string;
   onSearch?: (query: string) => void;
   defaultValue?: string;
+  onChangeText?: (value: string) => void;
+  value?: string; // NEW: controlled mode
 }
 
 const SearchBar: FC<SearchBarProps> = ({
   placeholder = "Search…",
   onSearch,
   defaultValue = "",
+  onChangeText,
+  value, // NEW
 }) => {
-  const [query, setQuery] = useState(defaultValue);
+  const isControlled = value !== undefined;
+  const [internal, setInternal] = useState(defaultValue);
 
-  const triggerSearch = () => {
-    onSearch?.(query.trim());
+  // keep internal in sync when defaultValue changes and component is uncontrolled
+  useEffect(() => {
+    if (!isControlled) setInternal(defaultValue);
+  }, [defaultValue, isControlled]);
+
+  const current = isControlled ? value! : internal;
+
+  const setValue = (v: string) => {
+    if (!isControlled) setInternal(v);
+    onChangeText?.(v);
   };
+
+  const triggerSearch = () => onSearch?.(current.trim());
 
   const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") triggerSearch();
@@ -38,8 +53,8 @@ const SearchBar: FC<SearchBarProps> = ({
     >
       <TextField
         fullWidth
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        value={current}
+        onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKey}
         variant="outlined"
         placeholder={placeholder}
