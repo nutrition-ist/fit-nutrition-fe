@@ -22,14 +22,12 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import SummaryTile from "@/components/SummaryTile";
 import RecipeList from "@/components/RecipeList";
 import SocialLinks from "@/components/SocialLinks";
-
 import BmiCard from "@/components/BmiCard";
 import QuickActions from "@/components/QuickActions";
 import PatientSettingsDialog, {
   PatientPrefsPayload,
 } from "@/components/PatientSettingsDialog";
 
-/* ---------- types from API ---------- */
 interface Patient {
   id: number;
   username: string;
@@ -37,7 +35,7 @@ interface Patient {
   first_name: string;
   last_name: string;
   phone: string | null;
-  dietician: number | null; 
+  dietician: number | null | Dietitian; // can be id *or* embedded object
   profile_picture: string | null;
 }
 
@@ -74,13 +72,11 @@ interface Dietitian {
   whatsapp: string | null;
 }
 
-/* ---------- page ---------- */
 const PatientDashboard: React.FC = () => {
   const [data, setData] = useState<PatientDashboardData | null>(null);
   const [dietitian, setDietitian] = useState<Dietitian | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
-
   const [prefsOpen, setPrefsOpen] = useState<boolean>(false);
 
   const api =
@@ -107,14 +103,14 @@ const PatientDashboard: React.FC = () => {
         };
         setData(payload);
 
-        const dietId = payload.patient?.dietician ?? null;
-        if (dietId) {
-          try {
-            const d = await axios.get(`${api}dietitian/${dietId}/`);
-            setDietitian(d.data);
-          } catch {
-            /* non-fatal */
-          }
+        const embedded =
+          (res.data.dietician as Dietitian | undefined) ??
+          (res.data.patient?.dietician as Dietitian | undefined);
+
+        if (embedded && typeof embedded === "object") {
+          setDietitian(embedded);
+        } else {
+          setDietitian(null);
         }
       } catch (e) {
         if (axios.isAxiosError(e)) {
@@ -123,26 +119,25 @@ const PatientDashboard: React.FC = () => {
             window.location.href = "/login?redirect=patient-dashboard";
             return;
           }
-          if (e.response?.status === 404) {
-            // temporary fallback so the page still works without the endpoint
-            const username = localStorage.getItem("username") || "Patient";
-            setData({
-              patient: {
-                id: -1,
-                username,
-                email: "",
-                first_name: username,
-                last_name: "",
-                phone: null,
-                dietician: null,
-                profile_picture: null,
-              },
-              upcoming_appointments: [],
-              meal_plans: [],
-            });
-            setLoading(false);
-            return;
-          }
+          // if (e.response?.status === 404) {
+          //   const username = localStorage.getItem("username") || "Patient";
+          //   setData({
+          //     patient: {
+          //       id: -1,
+          //       username,
+          //       email: "",
+          //       first_name: username,
+          //       last_name: "",
+          //       phone: null,
+          //       dietician: null,
+          //       profile_picture: null,
+          //     },
+          //     upcoming_appointments: [],
+          //     meal_plans: [],
+          //   });
+          //   setLoading(false);
+          //   return;
+          // }
         }
         setErr("Failed to load your profile.");
       } finally {
@@ -189,7 +184,6 @@ const PatientDashboard: React.FC = () => {
 
   return (
     <Box px={{ xs: 2, md: 6 }} py={4}>
-      {/* header */}
       <Stack
         direction="row"
         alignItems="center"
@@ -209,7 +203,6 @@ const PatientDashboard: React.FC = () => {
         </Button>
       </Stack>
 
-      {/* KPI tiles */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -234,28 +227,25 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* quick actions + BMI */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} md={6}>
           <QuickActions
-            dietitianId={p.dietician ?? undefined}
+            dietitianId={
+              typeof p.dietician === "number" ? p.dietician : undefined
+            }
             onOpenSettings={() => setPrefsOpen(true)}
           />
         </Grid>
         <Grid item xs={12} md={6}>
-          <BmiCard
-            onSaved={() => {
-              /* hook for analytics if needed */
-            }}
-          />
+          <BmiCard onSaved={() => {}} />
         </Grid>
       </Grid>
 
-      {/* your dietitian */}
       <Box mt={2} mb={4}>
         <Typography variant="h6" gutterBottom>
           Your dietitian
         </Typography>
+
         {dietitian ? (
           <Card variant="outlined">
             <CardContent>
@@ -275,6 +265,7 @@ const PatientDashboard: React.FC = () => {
                   {dietitian.first_name?.charAt(0)}
                   {dietitian.last_name?.charAt(0)}
                 </Avatar>
+
                 <Box flex={1}>
                   <Typography fontWeight={600}>
                     {dietitian.first_name} {dietitian.last_name}
@@ -284,6 +275,7 @@ const PatientDashboard: React.FC = () => {
                   </Typography>
                   <SocialLinks dietitian={dietitian} />
                 </Box>
+
                 <Stack direction="row" spacing={1}>
                   <Button href={`/book`} variant="outlined" size="small">
                     Book session
@@ -316,11 +308,7 @@ const PatientDashboard: React.FC = () => {
                     Find a professional and start your personalised plan
                   </Typography>
                 </Box>
-                <Button
-                  href="/dietitian"
-                  variant="contained"
-                  size="small"
-                >
+                <Button href="/dietitian" variant="contained" size="small">
                   Find a dietitian
                 </Button>
               </Stack>
@@ -331,7 +319,6 @@ const PatientDashboard: React.FC = () => {
 
       <Divider sx={{ my: 3 }} />
 
-      {/* recipes */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -345,12 +332,10 @@ const PatientDashboard: React.FC = () => {
       </Stack>
       <RecipeList globalOnly limit={4} grid />
 
-      {/* management dialog */}
       <PatientSettingsDialog
         open={prefsOpen}
         onClose={() => setPrefsOpen(false)}
         onSave={async (payload: PatientPrefsPayload) => {
-          // optimistic close
           setPrefsOpen(false);
           try {
             const token = localStorage.getItem("accessToken");
@@ -359,7 +344,7 @@ const PatientDashboard: React.FC = () => {
               headers: { Authorization: `Bearer ${token}` },
             });
           } catch {
-            // swallow. preferences are also saved to localStorage by the dialog.
+            // no-op
           }
         }}
       />
