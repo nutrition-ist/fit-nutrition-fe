@@ -1,22 +1,23 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  Avatar,
   Box,
   Card,
+  CardActionArea,
+  CircularProgress,
   Grid,
   Stack,
   Typography,
-  Avatar,
-  CircularProgress,
 } from "@mui/material";
 
-interface Recipe {
+export interface Recipe {
   id: number;
   name: string;
   instructions: string;
   image: string;
-  tags: string; // e.g. "[\"Cookies\",\"Dessert\"]"
+  tags: string;
   calories: string;
   protein: string;
   sodium: string;
@@ -26,13 +27,48 @@ interface Recipe {
 }
 
 type Props = {
-  ownerId?: number; // the logged-in dietitian
+  ownerId?: number;
   globalOnly?: boolean;
-  limit?: number; // cut-off for dashboard preview
-  grid?: boolean; // full gallery vs. list
+  limit?: number;
+  grid?: boolean;
   searchQuery?: string;
   tagFilter?: string | null;
+  onSelect?: (recipe: Recipe) => void;
+  // NEW
+  calorieRange?: [number, number];
+  dietFilter?: string[];
+  allergyFilter?: string[];
+  onVisibleChange?: (list: Recipe[]) => void;
 };
+
+const calToNumber = (label: string) => {
+  switch (label) {
+    case "low":
+      return 150;
+    case "medium":
+      return 350;
+    case "high":
+      return 700;
+    default:
+      return 0;
+  }
+};
+
+const mapDietToTags = (diet: string): string[] => {
+  const m: Record<string, string[]> = {
+    Vegan: ["Vegan"],
+    Vegetarian: ["Vegetarian"],
+    Keto: ["Keto"],
+    Paleo: ["Paleo"],
+    "Low Carb": ["Low Carb"],
+    "High Protein": ["High Protein"],
+    "Gluten-free": ["Gluten-Free", "Wheat/Gluten-Free"],
+    "Dairy-free": ["Dairy Free"],
+  };
+  return m[diet] ?? [diet];
+};
+
+const mapAllergyToTag = (a: string) => `${a} Free`;
 
 const RecipeList: React.FC<Props> = ({
   ownerId,
@@ -41,12 +77,16 @@ const RecipeList: React.FC<Props> = ({
   searchQuery = "",
   tagFilter = null,
   grid = false,
+  onSelect,
+  calorieRange,
+  dietFilter = [],
+  allergyFilter = [],
+  onVisibleChange,
 }) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* ---- load once ---- */
   useEffect(() => {
     fetch("/last_30_recipes.json")
       .then((r) => r.json())
@@ -55,15 +95,12 @@ const RecipeList: React.FC<Props> = ({
       .finally(() => setLoading(false));
   }, []);
 
-  /* ---- filter + slice ---- */
   const visible = useMemo(() => {
     let pool = recipes;
 
-    // ① take only global recipes when flag is on
     if (globalOnly) {
       pool = pool.filter((r) => r.owner_id === 0);
     } else if (typeof ownerId === "number") {
-      // ② otherwise apply owner logic (dashboard case)
       pool = pool.filter((r) => r.owner_id === 0 || r.owner_id === ownerId);
     }
 
@@ -72,7 +109,11 @@ const RecipeList: React.FC<Props> = ({
       pool = pool.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
-          r.instructions.toLowerCase().includes(q)
+          r.instructions.toLowerCase().includes(q) ||
+          JSON.parse(r.tags ?? "[]")
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
       );
     }
 
@@ -80,25 +121,61 @@ const RecipeList: React.FC<Props> = ({
       pool = pool.filter((r) => JSON.parse(r.tags ?? "[]").includes(tagFilter));
     }
 
-    return typeof limit === "number" ? pool.slice(0, limit) : pool;
-  }, [recipes, ownerId, globalOnly, searchQuery, tagFilter, limit]);
+    if (dietFilter.length) {
+      pool = pool.filter((r) => {
+        const t: string[] = JSON.parse(r.tags ?? "[]");
+        return dietFilter.some((d) =>
+          mapDietToTags(d).some((mt) => t.includes(mt))
+        );
+      });
+    }
 
-  /* ---- render ---- */
+    if (allergyFilter.length) {
+      pool = pool.filter((r) => {
+        const t: string[] = JSON.parse(r.tags ?? "[]");
+        return allergyFilter.every((a) => t.includes(mapAllergyToTag(a)));
+      });
+    }
+
+    if (calorieRange) {
+      const [min, max] = calorieRange;
+      pool = pool.filter((r) => {
+        const kcal = calToNumber(r.calories);
+        return kcal >= min && kcal <= max;
+      });
+    }
+
+    const out = typeof limit === "number" ? pool.slice(0, limit) : pool;
+    return out;
+  }, [
+    recipes,
+    ownerId,
+    globalOnly,
+    searchQuery,
+    tagFilter,
+    limit,
+    calorieRange,
+    dietFilter,
+    allergyFilter,
+  ]);
+
+  useEffect(() => {
+    onVisibleChange?.(visible);
+  }, [visible, onVisibleChange]);
+
   if (loading)
     return (
       <Box py={4} textAlign="center">
         <CircularProgress />
       </Box>
     );
-
   if (error)
     return (
       <Box py={4} textAlign="center">
         <Typography color="error">{error}</Typography>
       </Box>
     );
-
-  if (visible.length === 0)
+  if (!visible.length)
     return (
       <Box py={4} textAlign="center">
         <Typography>No recipes yet.</Typography>
@@ -109,43 +186,48 @@ const RecipeList: React.FC<Props> = ({
   const containerProps = grid
     ? { container: true, spacing: 2 }
     : { spacing: 2 };
+
   return (
     <Container {...containerProps}>
       {visible.map((r) => {
-        const tagArr: string[] = JSON.parse(r.tags ?? "[]");
-        const Inner = (
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar
-              variant="rounded"
-              src={r.image}
-              alt={r.name}
-              sx={{ width: 56, height: 56 }}
-            />
-            <Box flex={1}>
-              <Typography fontWeight={600}>{r.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {tagArr.join(", ")}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                ⚡{r.calories}, 💪{r.protein}, 🧂{r.sodium}
-              </Typography>
-            </Box>
-            {!!r.rating && (
-              <Typography variant="caption" color="text.secondary">
-                ⭐ {r.rating}
-              </Typography>
-            )}
-          </Stack>
+        const tags: string[] = JSON.parse(r.tags ?? "[]");
+        const card = (
+          <Card sx={{ p: 0 }}>
+            <CardActionArea onClick={() => onSelect?.(r)} sx={{ p: 2 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar
+                  variant="rounded"
+                  src={r.image}
+                  alt={r.name}
+                  sx={{ width: 56, height: 56 }}
+                />
+                <Box flex={1}>
+                  <Typography fontWeight={600} noWrap>
+                    {r.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {tags.join(", ")}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ⚡{r.calories} 💪{r.protein} 🧂{r.sodium}
+                  </Typography>
+                </Box>
+                {!!r.rating && (
+                  <Typography variant="caption" color="text.secondary">
+                    ⭐ {r.rating}
+                  </Typography>
+                )}
+              </Stack>
+            </CardActionArea>
+          </Card>
         );
 
         return grid ? (
           <Grid item xs={12} sm={6} md={4} lg={3} key={r.id}>
-            <Card sx={{ p: 2 }}>{Inner}</Card>
+            {card}
           </Grid>
         ) : (
-          <Card key={r.id} sx={{ p: 2 }}>
-            {Inner}
-          </Card>
+          <React.Fragment key={r.id}>{card}</React.Fragment>
         );
       })}
     </Container>
