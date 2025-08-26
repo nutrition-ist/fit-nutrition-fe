@@ -12,9 +12,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import GoogleIcon from "@mui/icons-material/Google";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 interface LoginFormData {
   username: string; //still called “username” for the API, but its email
@@ -157,14 +157,11 @@ const LoginPage: React.FC = () => {
 
         {/* ---------- social buttons ---------- */}
         <Stack spacing={2}>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            sx={socialBtn}
-          >
-            Log in with Google
-          </Button>
+          <GoogleAuthButton
+            redirectTo={redirectUrl}
+            keepMeLogged={keepMeLogged}
+            onMessage={setMsg}
+          />
           <Button
             fullWidth
             variant="outlined"
