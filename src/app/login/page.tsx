@@ -64,8 +64,6 @@ const LoginPage: React.FC = () => {
   /* ---------------- helpers ---------------- */
   const onChange = (e: ChangeEvent<HTMLInputElement>) =>
     setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
-  console.log("GID =", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg({});
