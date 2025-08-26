@@ -10,11 +10,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import GoogleIcon from "@mui/icons-material/Google";
-import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
 import Link from "next/link";
 import Register, { NewPatientData } from "@/components/Register";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 interface DietitianFormData extends NewPatientData {
   address: string;
@@ -129,32 +128,14 @@ const RegisterPage: React.FC = () => {
         </Typography>
 
         {/* Social auth */}
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<GoogleIcon />}
-          sx={{
-            textTransform: "none",
-            borderRadius: 12,
-            justifyContent: "flex-start",
-            pl: 1.5,
+        <GoogleAuthButton
+          redirectTo="dietitian-dashboard"
+          keepMeLogged={true}
+          onMessage={(m) => {
+            if (m.err) setError(m.err);
+            if (m.ok) setSuccessMessage(m.ok);
           }}
-        >
-          Register with Google
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<FacebookIcon />}
-          sx={{
-            textTransform: "none",
-            borderRadius: 12,
-            justifyContent: "flex-start",
-            pl: 1.5,
-          }}
-        >
-          Register with Facebook
-        </Button>
+        />
 
         <Divider sx={{ my: 1 }}>Or register with email</Divider>
 
