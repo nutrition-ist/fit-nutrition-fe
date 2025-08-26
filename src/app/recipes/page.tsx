@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
-  Button,
   Chip,
   Container,
   Divider,
@@ -16,7 +15,6 @@ import {
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchBar from "@/components/SearchBar";
 import RecipeList, { Recipe } from "@/components/RecipeList";
 import RecipeDetail from "@/components/RecipeDetail";
@@ -381,26 +379,6 @@ export default function RecipesPage() {
                 />
               </Grid>
             </Grid>
-          </Container>
-
-          <Container sx={{ pb: 4 }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              size="small"
-              onClick={() => {
-                setActiveTag(null);
-                setQuery("");
-                setDietSel([]);
-                setAllergySel([]);
-                setSelectedTime(null);
-                setUserStartedSearch(false); // back to landing
-                setCalorieDirty(false);
-                setCalorieRange(FULL_CAL_RANGE);
-              }}
-              sx={{ mt: 2 }}
-            >
-              Home
-            </Button>
           </Container>
         </>
       )}
