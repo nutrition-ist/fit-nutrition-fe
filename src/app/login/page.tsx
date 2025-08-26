@@ -12,7 +12,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 
@@ -25,17 +24,6 @@ const pillBtn = {
   borderRadius: 99,
   textTransform: "none",
   fontWeight: 600,
-};
-
-const socialBtn = {
-  ...pillBtn,
-  borderColor: "success.main",
-  color: "success.main",
-  "&:hover": {
-    bgcolor: "success.main",
-    color: "#fff",
-    borderColor: "success.main",
-  },
 };
 
 const LoginPage: React.FC = () => {
@@ -76,6 +64,7 @@ const LoginPage: React.FC = () => {
   /* ---------------- helpers ---------------- */
   const onChange = (e: ChangeEvent<HTMLInputElement>) =>
     setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
+  console.log("GID =", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -162,14 +151,6 @@ const LoginPage: React.FC = () => {
             keepMeLogged={keepMeLogged}
             onMessage={setMsg}
           />
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<FacebookIcon />}
-            sx={socialBtn}
-          >
-            Log in with Facebook
-          </Button>
         </Stack>
 
         {/* ---------- divider ---------- */}

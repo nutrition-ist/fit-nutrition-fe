@@ -10,7 +10,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import FacebookIcon from "@mui/icons-material/Facebook";
 import axios from "axios";
 import Link from "next/link";
 import Register, { NewPatientData } from "@/components/Register";
@@ -137,19 +136,6 @@ const RegisterPage: React.FC = () => {
             if (m.ok) setSuccessMessage(m.ok);
           }}
         />
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<FacebookIcon />}
-          sx={{
-            textTransform: "none",
-            borderRadius: 12,
-            justifyContent: "flex-start",
-            pl: 1.5,
-          }}
-        >
-          Register with Facebook
-        </Button>
 
         <Divider sx={{ my: 1 }}>Or register with email</Divider>
 
