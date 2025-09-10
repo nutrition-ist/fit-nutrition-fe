@@ -13,7 +13,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import Image from "next/image";
+//import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import BlogCard, { BlogPostSummary } from "@/components/BlogCard";
 
@@ -21,7 +21,7 @@ type BlogPost = BlogPostSummary & {
   content_html?: string;
   content?: string;
 };
-
+/*Md dosyasından okunacak, BE gerek yok*/
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "https://hazalkaynak.pythonanywhere.com/";
 
@@ -220,7 +220,7 @@ export default function BlogPage() {
                 overflow: "hidden",
               }}
             >
-              <Image
+              <img
                 src={selected.cover_image}
                 alt={selected.title}
                 fill
