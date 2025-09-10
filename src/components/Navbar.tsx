@@ -34,7 +34,7 @@ const cfg: Record<Role, RoleConfig> = {
   visitor: {
     links: [
       { label: "Find a Dietitian", href: "/dietitian" },
-      { label: "Blog", href: "/wip" },
+      { label: "Blog", href: "/blog" },
       { label: "Login", href: "/login" },
     ],
     cta: { label: "Are you a Dietitian?", href: "/register" },
