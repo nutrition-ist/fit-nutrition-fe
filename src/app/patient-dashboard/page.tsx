@@ -11,9 +11,6 @@ import {
   Typography,
   Button,
   Divider,
-  Avatar,
-  Card,
-  CardContent,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
@@ -21,12 +18,16 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 
 import SummaryTile from "@/components/SummaryTile";
 import RecipeList from "@/components/RecipeList";
-import SocialLinks from "@/components/SocialLinks";
 import BmiCard from "@/components/BmiCard";
 import QuickActions from "@/components/QuickActions";
 import PatientSettingsDialog, {
   PatientPrefsPayload,
 } from "@/components/PatientSettingsDialog";
+import DietitianCard, {
+  Dietitian as DietitianType,
+} from "@/components/DietitianCard";
+import AppointmentCard from "@/components/AppointmentCard";
+import AppointmentsCalendar from "@/components/AppointmentsCalendar";
 
 interface Patient {
   id: number;
@@ -35,7 +36,7 @@ interface Patient {
   first_name: string;
   last_name: string;
   phone: string | null;
-  dietician: number | null | Dietitian; // can be id *or* embedded object
+  dietician: number | null | DietitianType;
   profile_picture: string | null;
 }
 
@@ -47,34 +48,33 @@ interface Appointment {
   is_active: boolean;
 }
 
-interface MealPlanSummary {
-  id: number;
-  title: string;
-}
-
 interface PatientDashboardData {
   patient: Patient;
+  appointments?: Appointment[];
   upcoming_appointments?: Appointment[];
-  meal_plans?: MealPlanSummary[];
+  meal_plans?: { id: number; title: string }[] | number;
 }
 
-interface Dietitian {
-  id: number;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  address: string;
-  profile_picture: string | null;
-  facebook: string | null;
-  instagram: string | null;
-  x_twitter: string | null;
-  youtube: string | null;
-  whatsapp: string | null;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeDietitian = (raw: any): DietitianType => {
+  const d = (raw?.dietician ?? raw) || {};
+  return {
+    id: Number(d.id ?? 0),
+    username: String(d.username ?? ""),
+    first_name: String(d.first_name ?? ""),
+    last_name: String(d.last_name ?? ""),
+    profile_picture: d.profile_picture ?? null,
+    about_me: d.about_me ?? undefined,
+    qualifications: Array.isArray(d.qualifications) ? d.qualifications : [],
+    available: d.available ?? undefined,
+    next_available_date: d.next_available_date ?? undefined,
+    online_booking: d.online_booking ?? true,
+  };
+};
 
 const PatientDashboard: React.FC = () => {
   const [data, setData] = useState<PatientDashboardData | null>(null);
-  const [dietitian, setDietitian] = useState<Dietitian | null>(null);
+  const [dietitian, setDietitian] = useState<DietitianType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
   const [prefsOpen, setPrefsOpen] = useState<boolean>(false);
@@ -89,26 +89,42 @@ const PatientDashboard: React.FC = () => {
       window.location.href = "/login?redirect=patient-dashboard";
       return;
     }
-
     const headers = { Authorization: `Bearer ${token}` };
 
-    const run = async (): Promise<void> => {
+    (async () => {
       try {
         const res = await axios.get(`${api}patient/me/`, { headers });
 
         const payload: PatientDashboardData = {
           patient: res.data.patient ?? res.data,
-          upcoming_appointments: res.data.upcoming_appointments ?? [],
+          appointments:
+            res.data.appointments ?? res.data.upcoming_appointments ?? [],
+          upcoming_appointments:
+            res.data.upcoming_appointments ?? res.data.appointments ?? [],
           meal_plans: res.data.meal_plans ?? [],
         };
         setData(payload);
 
-        const embedded =
-          (res.data.dietician as Dietitian | undefined) ??
-          (res.data.patient?.dietician as Dietitian | undefined);
+        const dField = payload.patient?.dietician ?? null;
 
-        if (embedded && typeof embedded === "object") {
-          setDietitian(embedded);
+        if (dField && typeof dField === "object") {
+          setDietitian(normalizeDietitian(dField));
+        } else if (typeof dField === "number") {
+          try {
+            const r1 = await axios.get(`${api}dietician/${dField}/`, {
+              headers,
+            });
+            setDietitian(normalizeDietitian(r1.data));
+          } catch {
+            try {
+              const r2 = await axios.get(`${api}dietitian/${dField}/`, {
+                headers,
+              });
+              setDietitian(normalizeDietitian(r2.data));
+            } catch {
+              setDietitian(null);
+            }
+          }
         } else {
           setDietitian(null);
         }
@@ -119,46 +135,54 @@ const PatientDashboard: React.FC = () => {
             window.location.href = "/login?redirect=patient-dashboard";
             return;
           }
-          // if (e.response?.status === 404) {
-          //   const username = localStorage.getItem("username") || "Patient";
-          //   setData({
-          //     patient: {
-          //       id: -1,
-          //       username,
-          //       email: "",
-          //       first_name: username,
-          //       last_name: "",
-          //       phone: null,
-          //       dietician: null,
-          //       profile_picture: null,
-          //     },
-          //     upcoming_appointments: [],
-          //     meal_plans: [],
-          //   });
-          //   setLoading(false);
-          //   return;
-          // }
+          if (e.response?.status === 404) {
+            const username = localStorage.getItem("username") || "Patient";
+            setData({
+              patient: {
+                id: -1,
+                username,
+                email: "",
+                first_name: username,
+                last_name: "",
+                phone: null,
+                dietician: null,
+                profile_picture: null,
+              },
+              appointments: [],
+              upcoming_appointments: [],
+              meal_plans: [],
+            });
+            setLoading(false);
+            return;
+          }
         }
         setErr("Failed to load your profile.");
       } finally {
         setLoading(false);
       }
-    };
-
-    void run();
+    })();
   }, [api]);
 
+  const appointments: Appointment[] = useMemo(
+    () =>
+      (data?.upcoming_appointments ??
+        data?.appointments ??
+        []) as Appointment[],
+    [data]
+  );
+
   const nextApptText = useMemo(() => {
-    const appts = data?.upcoming_appointments ?? [];
-    if (!appts.length) return "No appointment booked";
-    const soonest = [...appts].sort(
+    if (!appointments.length) return "No appointment booked";
+    const soonest = [...appointments].sort(
       (a, b) =>
         new Date(a.date_time).getTime() - new Date(b.date_time).getTime()
     )[0];
     return dayjs(soonest.date_time).format("D MMM YYYY, h:mm A");
-  }, [data]);
+  }, [appointments]);
 
-  const mealPlanCount = data?.meal_plans?.length ?? 0;
+  const mealPlanCount = Array.isArray(data?.meal_plans)
+    ? data!.meal_plans!.length
+    : Number(data?.meal_plans ?? 0);
 
   if (loading) {
     return (
@@ -181,6 +205,10 @@ const PatientDashboard: React.FC = () => {
   }
 
   const p = data.patient;
+
+  const patientsForCards = [
+    { id: p.id, first_name: p.first_name, last_name: p.last_name },
+  ];
 
   return (
     <Box px={{ xs: 2, md: 6 }} py={4}>
@@ -231,7 +259,9 @@ const PatientDashboard: React.FC = () => {
         <Grid item xs={12} md={6}>
           <QuickActions
             dietitianId={
-              typeof p.dietician === "number" ? p.dietician : undefined
+              typeof p.dietician === "number"
+                ? p.dietician
+                : (p.dietician as DietitianType | null)?.id
             }
             onOpenSettings={() => setPrefsOpen(true)}
           />
@@ -241,81 +271,49 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Box mt={2} mb={4}>
+      <Box mt={2} mb={3}>
         <Typography variant="h6" gutterBottom>
           Your dietitian
         </Typography>
-
         {dietitian ? (
-          <Card variant="outlined">
-            <CardContent>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                alignItems="center"
-              >
-                <Avatar
-                  sx={{ width: 64, height: 64 }}
-                  src={
-                    dietitian.profile_picture
-                      ? `${api}${dietitian.profile_picture}`
-                      : undefined
-                  }
-                >
-                  {dietitian.first_name?.charAt(0)}
-                  {dietitian.last_name?.charAt(0)}
-                </Avatar>
-
-                <Box flex={1}>
-                  <Typography fontWeight={600}>
-                    {dietitian.first_name} {dietitian.last_name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {dietitian.phone} · {dietitian.address}
-                  </Typography>
-                  <SocialLinks dietitian={dietitian} />
-                </Box>
-
-                <Stack direction="row" spacing={1}>
-                  <Button href={`/book`} variant="outlined" size="small">
-                    Book session
-                  </Button>
-                  <Button
-                    href={`/dietitian/${dietitian.id}`}
-                    variant="contained"
-                    size="small"
-                  >
-                    View profile
-                  </Button>
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={5} lg={4}>
+              <DietitianCard dietitian={dietitian} />
+            </Grid>
+          </Grid>
         ) : (
-          <Card variant="outlined">
-            <CardContent>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                alignItems="center"
-                spacing={2}
-              >
-                <Avatar sx={{ width: 64, height: 64 }} />
-                <Box flex={1}>
-                  <Typography fontWeight={600}>
-                    You do not have a dietitian yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Find a professional and start your personalised plan
-                  </Typography>
-                </Box>
-                <Button href="/dietitian" variant="contained" size="small">
-                  Find a dietitian
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
+          <Button href="/dietitian" variant="contained" size="small">
+            Find a dietitian
+          </Button>
         )}
       </Box>
+
+      {!!appointments.length && (
+        <Box mt={1} mb={3}>
+          <Typography variant="h6" gutterBottom>
+            Your appointments
+          </Typography>
+          <Grid container spacing={2}>
+            {appointments.slice(0, 3).map((a) => (
+              <Grid item xs={12} sm={6} md={4} key={a.id}>
+                <AppointmentCard
+                  appointment={{
+                    id: a.id,
+                    patient: a.patient,
+                    date_time: a.date_time,
+                    is_active: a.is_active,
+                  }}
+                  patients={patientsForCards}
+                />
+              </Grid>
+            ))}
+          </Grid>
+
+          <Box mt={2}>
+            <AppointmentsCalendar appointments={appointments} />
+          </Box>
+        </Box>
+      )}
 
       <Divider sx={{ my: 3 }} />
 
@@ -343,9 +341,7 @@ const PatientDashboard: React.FC = () => {
             await axios.post(`${api}patient/preferences/`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             });
-          } catch {
-            // no-op
-          }
+          } catch {}
         }}
       />
     </Box>
