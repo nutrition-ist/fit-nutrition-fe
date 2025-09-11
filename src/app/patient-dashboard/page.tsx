@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import dayjs from "dayjs";
 import axios from "axios";
 import {
@@ -11,15 +12,21 @@ import {
   Typography,
   Button,
   Divider,
+  Card,
+  CardActionArea,
+  CardContent,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import StraightenIcon from "@mui/icons-material/Straighten";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 
+import MeasurementSummaryCard from "@/components/MeasurementSummaryCard";
 import SummaryTile from "@/components/SummaryTile";
 import RecipeList from "@/components/RecipeList";
-import BmiCard from "@/components/BmiCard";
-import QuickActions from "@/components/QuickActions";
 import PatientSettingsDialog, {
   PatientPrefsPayload,
 } from "@/components/PatientSettingsDialog";
@@ -55,22 +62,97 @@ interface PatientDashboardData {
   meal_plans?: { id: number; title: string }[] | number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const normalizeDietitian = (raw: any): DietitianType => {
-  const d = (raw?.dietician ?? raw) || {};
+type DietitianWire = Partial<DietitianType> & { id?: number };
+type DietitianInput =
+  | number
+  | DietitianWire
+  | { dietician?: number | DietitianWire }
+  | null
+  | undefined;
+
+const normalizeDietitian = (raw: DietitianInput): DietitianType | null => {
+  if (raw == null) return null;
+
+  const source: number | DietitianWire =
+    typeof raw === "object" && "dietician" in raw && raw.dietician !== undefined
+      ? raw.dietician
+      : (raw as number | DietitianWire);
+
+  if (typeof source === "number") {
+    return {
+      id: source,
+      username: "",
+      first_name: "",
+      last_name: "",
+      profile_picture: null,
+      about_me: undefined,
+      qualifications: [],
+      available: undefined,
+      next_available_date: undefined,
+      online_booking: true,
+    };
+  }
+
   return {
-    id: Number(d.id ?? 0),
-    username: String(d.username ?? ""),
-    first_name: String(d.first_name ?? ""),
-    last_name: String(d.last_name ?? ""),
-    profile_picture: d.profile_picture ?? null,
-    about_me: d.about_me ?? undefined,
-    qualifications: Array.isArray(d.qualifications) ? d.qualifications : [],
-    available: d.available ?? undefined,
-    next_available_date: d.next_available_date ?? undefined,
-    online_booking: d.online_booking ?? true,
+    id: Number(source.id ?? 0),
+    username: String(source.username ?? ""),
+    first_name: String(source.first_name ?? ""),
+    last_name: String(source.last_name ?? ""),
+    profile_picture: source.profile_picture ?? null,
+    about_me: source.about_me ?? undefined,
+    qualifications: Array.isArray(source.qualifications)
+      ? source.qualifications
+      : [],
+    available: source.available ?? undefined,
+    next_available_date: source.next_available_date ?? undefined,
+    online_booking: source.online_booking ?? true,
   };
 };
+
+type DashTileProps = {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  fullWidth?: boolean;
+};
+
+const DashTile: React.FC<DashTileProps> = ({
+  href,
+  icon,
+  title,
+  subtitle,
+  fullWidth,
+}) => (
+  <Grid item xs={12} md={fullWidth ? 12 : 6}>
+    <Card variant="outlined" sx={{ height: "100%" }}>
+      <Link href={href} passHref legacyBehavior>
+        <CardActionArea sx={{ height: "100%" }}>
+          <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: 1,
+                bgcolor: "grey.100",
+              }}
+            >
+              {icon}
+            </Box>
+            <Box>
+              <Typography fontWeight={700}>{title}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {subtitle}
+              </Typography>
+            </Box>
+          </CardContent>
+        </CardActionArea>
+      </Link>
+    </Card>
+  </Grid>
+);
 
 const PatientDashboard: React.FC = () => {
   const [data, setData] = useState<PatientDashboardData | null>(null);
@@ -106,18 +188,16 @@ const PatientDashboard: React.FC = () => {
         setData(payload);
 
         const dField = payload.patient?.dietician ?? null;
-
-        if (dField && typeof dField === "object") {
-          setDietitian(normalizeDietitian(dField));
-        } else if (typeof dField === "number") {
+        const normalized = normalizeDietitian(dField);
+        if (normalized && normalized.id && !normalized.username) {
           try {
-            const r1 = await axios.get(`${api}dietician/${dField}/`, {
+            const r1 = await axios.get(`${api}dietician/${normalized.id}/`, {
               headers,
             });
             setDietitian(normalizeDietitian(r1.data));
           } catch {
             try {
-              const r2 = await axios.get(`${api}dietitian/${dField}/`, {
+              const r2 = await axios.get(`${api}dietitian/${normalized.id}/`, {
                 headers,
               });
               setDietitian(normalizeDietitian(r2.data));
@@ -126,7 +206,7 @@ const PatientDashboard: React.FC = () => {
             }
           }
         } else {
-          setDietitian(null);
+          setDietitian(normalized);
         }
       } catch (e) {
         if (axios.isAxiosError(e)) {
@@ -205,10 +285,16 @@ const PatientDashboard: React.FC = () => {
   }
 
   const p = data.patient;
-
   const patientsForCards = [
     { id: p.id, first_name: p.first_name, last_name: p.last_name },
   ];
+
+  const myDietitianHref =
+    typeof p.dietician === "number"
+      ? `/dietitian/${p.dietician}`
+      : (p.dietician as DietitianType | null)?.username
+      ? `/dietitian/${(p.dietician as DietitianType).username}`
+      : "/dietitian";
 
   return (
     <Box px={{ xs: 2, md: 6 }} py={4}>
@@ -221,7 +307,6 @@ const PatientDashboard: React.FC = () => {
         <Typography variant="h4" fontWeight={600}>
           Welcome back, {p.first_name}!
         </Typography>
-
         <Button
           variant="outlined"
           size="small"
@@ -231,6 +316,7 @@ const PatientDashboard: React.FC = () => {
         </Button>
       </Stack>
 
+      {/* KPI row */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -255,19 +341,46 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Left tiles + Right summary */}
       <Grid container spacing={2} mb={4}>
+        {/* LEFT column of tiles */}
         <Grid item xs={12} md={6}>
-          <QuickActions
-            dietitianId={
-              typeof p.dietician === "number"
-                ? p.dietician
-                : (p.dietician as DietitianType | null)?.id
-            }
-            onOpenSettings={() => setPrefsOpen(true)}
-          />
+          <Grid container spacing={2}>
+            <DashTile
+              href="/meal-plans"
+              icon={<MenuBookIcon />}
+              title="Meal plans"
+              subtitle="See your plans"
+            />
+            <DashTile
+              href="/recipes"
+              icon={<RestaurantMenuIcon />}
+              title="Recipes"
+              subtitle="Search and explore"
+            />
+            <DashTile
+              href="/measurements"
+              icon={<StraightenIcon />}
+              title="My Measurements"
+              subtitle="Open and log measurements"
+            />
+            <DashTile
+              href={myDietitianHref}
+              icon={<PersonOutlineIcon />}
+              title="My dietitian"
+              subtitle="View profile"
+            />
+            <DashTile
+              href="/management"
+              icon={<ManageAccountsIcon />}
+              title="Management"
+              subtitle="Allergies and account"
+              fullWidth
+            />
+          </Grid>
         </Grid>
         <Grid item xs={12} md={6}>
-          <BmiCard onSaved={() => {}} />
+          <MeasurementSummaryCard hideButton />
         </Grid>
       </Grid>
 
