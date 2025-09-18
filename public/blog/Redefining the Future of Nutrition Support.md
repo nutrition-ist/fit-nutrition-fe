@@ -1,9 +1,9 @@
 ---
-title: FitNutrition: Making the Day-to-Day of Dietetics Easier
-description: Discover how FitNutrition helps dietitians streamline client tracking, recipe recommendations, appointment scheduling, and global recipe search.
+title: FitNutrition: The Platform Transforming Nutrition Care
+description: FitNutrition bridges the gap between dietitians and clients with easy tracking, smart recipes, global reach, and seamless appointments.
 author: FitNutrition Team
-date: 2025-09-17
-category: nutrition, dietitians, practice-tools
+date: 2025-07-02
+category: business, health-tech, stakeholders
 ---
 # Redefining the Future of Nutrition Support
 
