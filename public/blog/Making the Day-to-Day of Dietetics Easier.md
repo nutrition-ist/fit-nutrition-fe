@@ -1,5 +1,5 @@
 ---
-title: FitNutrition: Making the Day-to-Day of Dietetics Easier
+title: Making the Day-to-Day of Dietetics Easier
 description: Discover how FitNutrition helps dietitians streamline client tracking, recipe recommendations, appointment scheduling, and global recipe search.
 author: FitNutrition Team
 date: 2025-09-17

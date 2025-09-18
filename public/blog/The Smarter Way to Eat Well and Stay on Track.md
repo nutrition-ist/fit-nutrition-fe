@@ -1,8 +1,8 @@
 ---
-title: FitNutrition: The Smarter Way to Eat Well and Stay on Track
+title: The Smarter Way to Eat Well and Stay on Track
 description: Learn how FitNutrition supports clients with finding a dietitian, fridge-friendly recipes, progress tracking, and easy appointments.
 author: FitNutrition Team
-date: 2001-10-01
+date: 2025-08-12
 category: healthy-living, clients, digital-health
 ---
 # The Smarter Way to Eat Well and Stay on Track
