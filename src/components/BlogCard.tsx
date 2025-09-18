@@ -21,6 +21,7 @@ export interface BlogPostSummary {
   created_at: string;
   read_minutes?: number;
   cover_image?: string | null;
+  author?: string; // NEW
 }
 
 const formatDate = (iso: string) =>
@@ -62,20 +63,44 @@ const BlogCard: React.FC<Props> = ({ post, href, onOpen }) => {
         />
       )}
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        {/* Title (author intentionally NOT included here) */}
         <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
           {post.title}
         </Typography>
+
+        {/* Summary */}
         <Typography variant="body2" color="text.secondary">
           {post.summary}
         </Typography>
+
+        {/* Tags */}
         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
           {post.tags.map((t) => (
             <Chip key={t} label={t} size="small" />
           ))}
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-          {formatDate(post.created_at)} · {minutes} min read
-        </Typography>
+
+        {/* Footer: date · minutes  |  author */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mt: 1 }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            {formatDate(post.created_at)} · {minutes} min read
+          </Typography>
+
+          {post.author && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ ml: 2, whiteSpace: "nowrap", fontStyle: "italic" }}
+            >
+              {post.author}
+            </Typography>
+          )}
+        </Stack>
       </CardContent>
     </CardActionArea>
   );

@@ -13,49 +13,167 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-//import Image from "next/image";
+import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import BlogCard, { BlogPostSummary } from "@/components/BlogCard";
+
+/* ---------- Static bloklar, dogru yazmazsan ismi kayar hayatın /public/blog ---------- */
+type BlogIndexItem = {
+  slug: string;
+  file: string;
+  fallbackTitle: string;
+  cover?: string;
+};
+
+const BLOG_INDEX: BlogIndexItem[] = [
+  {
+    slug: "smarter-way-to-eat",
+    file: "/blog/The Smarter Way to Eat Well and Stay on Track.md",
+    fallbackTitle: "The Smarter Way to Eat Well and Stay on Track",
+  },
+  {
+    slug: "future-of-nutrition-support",
+    file: "/blog/Redefining the Future of Nutrition Support.md",
+    fallbackTitle: "Redefining the Future of Nutrition Support",
+  },
+  {
+    slug: "day-to-day-dietetics-easier",
+    file: "/blog/Making the Day-to-Day of Dietetics Easier.md",
+    fallbackTitle: "Making the Day-to-Day of Dietetics Easier",
+  },
+];
+
+/* ---------- Types ---------- */
+type Frontmatter = {
+  title?: string;
+  description?: string;
+  author?: string;
+  date?: string;
+  cover?: string;
+  tags?: string[];
+  category?: string | string[];
+  categories?: string[];
+};
+
+type LoadedMarkdown = {
+  frontmatter: Frontmatter;
+  html: string;
+  plain: string;
+};
 
 type BlogPost = BlogPostSummary & {
   content_html?: string;
   content?: string;
 };
-/*Md dosyasından okunacak, BE gerek yok*/
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://hazalkaynak.pythonanywhere.com/";
 
-const SAMPLE_POSTS: BlogPost[] = [
-  {
-    id: 1,
-    slug: "getting-started",
-    title: "Getting started with Fitnutrition",
-    summary:
-      "A quick tour of habits, tools and recipes that move you from guesswork to a simple plan.",
-    tags: ["Basics", "Guides"],
-    created_at: new Date().toISOString(),
-    read_minutes: 4,
-    cover_image:
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1600&auto=format&fit=crop",
-    content_html:
-      "<p>Favour principles over hacks. Start with one constraint and layer slowly.</p><p>For example: add a palm of protein to lunch, two fists of veg to dinner. Track for two weeks, then iterate.</p>",
-  },
-  {
-    id: 2,
-    slug: "protein-traps",
-    title: "Protein label traps to avoid",
-    summary:
-      "Not all grams are equal. How to spot poor quality proteins and make smarter swaps.",
-    tags: ["Protein", "Labeling"],
-    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    read_minutes: 6,
-    cover_image:
-      "https://images.unsplash.com/photo-1493770348161-369560ae357d?q=80&w=1600&auto=format&fit=crop",
-    content_html:
-      "<p>Look past the gram count. Check leucine content and the ingredient list. Fewer fillers is usually better.</p>",
-  },
-];
+/* ---------- Minimal frontmatter + markdown renderers ---------- */
+function parseFrontmatter(md: string): { fm: Frontmatter; body: string } {
+  const m = md.match(/^---\s*([\s\S]*?)\s*---\s*/);
+  if (!m) return { fm: {}, body: md };
+  const raw = m[1];
+  const body = md.slice(m[0].length);
 
+  const fm: Frontmatter = {};
+  raw.split(/\r?\n/).forEach((line) => {
+    const kv = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
+    if (!kv) return;
+    const key = kv[1].trim();
+    const val = kv[2]
+      .trim()
+      .replace(/^"(.*)"$/, "$1")
+      .replace(/^'(.*)'$/, "$1");
+
+    const toArray = (v: string) =>
+      v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    switch (key) {
+      case "title":
+        fm.title = val;
+        break;
+      case "description":
+        fm.description = val;
+        break;
+      case "author":
+        fm.author = val;
+        break;
+      case "date":
+        fm.date = val;
+        break;
+      case "cover":
+        fm.cover = val;
+        break;
+      case "tags":
+        fm.tags = toArray(val);
+        break;
+      case "category":
+        fm.category = toArray(val);
+        break;
+      case "categories":
+        fm.categories = toArray(val);
+        break;
+      default:
+        break;
+    }
+  });
+
+  return { fm, body };
+}
+
+function mdToHtml(src: string): string {
+  let s = src;
+
+  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s = s.replace(/^###### (.*)$/gm, "<h6>$1</h6>");
+  s = s.replace(/^##### (.*)$/gm, "<h5>$1</h5>");
+  s = s.replace(/^#### (.*)$/gm, "<h4>$1</h4>");
+  s = s.replace(/^### (.*)$/gm, "<h3>$1</h3>");
+  s = s.replace(/^## (.*)$/gm, "<h2>$1</h2>");
+  s = s.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  s = s.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    `<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>`
+  );
+
+  s = s.replace(/^(?:-|\*) (.*(?:\r?\n(?:-|\*) .*)*)/gm, (block) => {
+    const items = block
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^(?:-|\*) /, "").trim())
+      .map((li) => `<li>${li}</li>`)
+      .join("");
+    return `<ul>${items}</ul>`;
+  });
+
+  s = s
+    .split(/\n{2,}/)
+    .map((para) =>
+      para.match(/^<h\d|^<ul|^<p|^<blockquote|^<img|^<pre|^<code/)
+        ? para
+        : `<p>${para.replace(/\n/g, "<br/>")}</p>`
+    )
+    .join("\n");
+
+  return s;
+}
+
+function renderMarkdown(md: string): LoadedMarkdown {
+  const { fm, body } = parseFrontmatter(md);
+  const html = mdToHtml(body);
+  const plain = body
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]+`/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[>#_*~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { frontmatter: fm, html, plain };
+}
+
+/* ---------- Helpers ---------- */
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
@@ -63,14 +181,20 @@ const fmtDate = (iso: string) =>
     day: "numeric",
   });
 
-const readingTime = (p: BlogPost) => {
-  if (p.read_minutes) return p.read_minutes;
-  const text =
-    p.content_html?.replace(/<[^>]+>/g, " ") ?? p.content ?? p.summary;
-  const words = text.trim().split(/\s+/).length || 1;
-  return Math.max(1, Math.round(words / 200));
-};
+const readingTime = (text: string): number =>
+  Math.max(1, Math.round(text.trim().split(/\s+/).length / 200));
 
+function normalizeTags(fm: Frontmatter): string[] {
+  const set = new Set<string>();
+  (fm.tags ?? []).forEach((t) => set.add(t));
+  const cat = fm.category;
+  if (typeof cat === "string") set.add(cat);
+  else if (Array.isArray(cat)) cat.forEach((c) => set.add(c));
+  (fm.categories ?? []).forEach((c) => set.add(c));
+  return [...set];
+}
+
+/* ---------- Page ---------- */
 type View = "index" | "detail";
 
 export default function BlogPage() {
@@ -83,7 +207,6 @@ export default function BlogPage() {
   const [selected, setSelected] = useState<BlogPost | null>(null);
 
   const wantedSlugRef = useRef<string | null>(null);
-
   const view: View = selected ? "detail" : "index";
 
   useEffect(() => {
@@ -97,39 +220,59 @@ export default function BlogPage() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let mounted = true;
     (async () => {
       try {
         setLoading(true);
         setErr(null);
 
-        const res = await fetch(`${API_BASE}blog/posts/`, {
-          signal: controller.signal,
-        });
+        const loaded = await Promise.all(
+          BLOG_INDEX.map(async (item): Promise<BlogPost> => {
+            const res = await fetch(item.file, { cache: "force-cache" });
+            if (!res.ok) throw new Error(`Failed to fetch ${item.file}`);
+            const text = await res.text();
+            const { frontmatter, html, plain } = renderMarkdown(text);
 
-        if (res.ok) {
-          const data = (await res.json()) as BlogPost[];
-          setPosts(data);
-        } else {
-          try {
-            const r2 = await fetch("/blog_posts.json", {
-              signal: controller.signal,
-            });
-            if (!r2.ok) throw new Error(String(r2.status));
-            const data2 = (await r2.json()) as BlogPost[];
-            setPosts(data2);
-          } catch {
-            setPosts(SAMPLE_POSTS);
-          }
-        }
+            const title = frontmatter.title || item.fallbackTitle;
+            const created = frontmatter.date || new Date().toISOString();
+            const tags = normalizeTags(frontmatter);
+
+            const summary =
+              frontmatter.description ||
+              (plain.length > 160 ? `${plain.slice(0, 160)}…` : plain);
+
+            const post: BlogPost = {
+              id: item.slug,
+              slug: item.slug,
+              title,
+              summary,
+              tags,
+              created_at: created,
+              read_minutes: readingTime(plain),
+              cover_image: frontmatter.cover ?? item.cover ?? undefined,
+              content_html: html,
+              content: plain,
+              author: frontmatter.author, 
+            };
+            return post;
+          })
+        );
+
+        loaded.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        if (mounted) setPosts(loaded);
       } catch {
-        setPosts(SAMPLE_POSTS);
+        if (mounted) setErr("Failed to load posts.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     })();
-
-    return () => controller.abort();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -200,7 +343,8 @@ export default function BlogPage() {
           </Typography>
 
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {fmtDate(selected.created_at)} · {readingTime(selected)} min read
+            {fmtDate(selected.created_at)} · {selected.read_minutes ?? 1} min
+            read
           </Typography>
 
           <Stack direction="row" spacing={1} sx={{ mb: 3 }} flexWrap="wrap">
@@ -220,12 +364,13 @@ export default function BlogPage() {
                 overflow: "hidden",
               }}
             >
-              <img
+              <Image
                 src={selected.cover_image}
                 alt={selected.title}
                 fill
                 sizes="(max-width: 900px) 100vw, 900px"
                 style={{ objectFit: "cover" }}
+                priority
               />
             </Box>
           )}
@@ -237,6 +382,7 @@ export default function BlogPage() {
                   "& p": { mb: 2, lineHeight: 1.9, fontSize: "1.05rem" },
                   "& h2, & h3": { mt: 3, mb: 1.5, fontWeight: 800 },
                   "& ul": { pl: 3, mb: 2 },
+                  "& a": { color: "primary.main", textDecoration: "underline" },
                 }}
                 dangerouslySetInnerHTML={{ __html: selected.content_html }}
               />
