@@ -145,10 +145,10 @@ const Navbar: FC<NavbarProps> = ({
           {/* Logo */}
           <Link href={logo.href ?? "/"} passHref>
             <Box sx={{ display: "flex", alignItems: "baseline", cursor: "pointer" }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#C35200", mr: 0.5 }}>
+              <Typography sx={{ fontSize:"1.25rem", fontWeight: 700, color: "#C35200", mr: 0.5 }}>
                 {logo.primary}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Typography sx={{ fontSize:"1.25rem", fontWeight: 700 }}>
                 {logo.secondary}
               </Typography>
             </Box>
@@ -166,7 +166,7 @@ const Navbar: FC<NavbarProps> = ({
               <Link key={href} href={href} passHref>
                 <Button
                   sx={{
-                    color: "common.white",
+                    color: "common.white", //Good use of theme
                     textTransform: "none",
                     fontWeight: 500,
                   }}
@@ -208,22 +208,22 @@ const Navbar: FC<NavbarProps> = ({
                     <Avatar sx={{ width: 32, height: 32 }}>
                       {userName?.charAt(0).toUpperCase()}
                     </Avatar>
-                    <Typography sx={{ color: "white" }}>{userName}</Typography>
+                    <Typography fontSize={14}>{userName}</Typography>
                   </Stack>
                 </Link>
 
                 {/* logout button */}
                 <Button
                   variant="outlined"
-                  size="small"
                   onClick={logout}
                   sx={{
-                    borderColor: "rgba(255,255,255,0.7)",
-                    color: "white",
-                    ":hover": { borderColor: "white" },
+                    borderColor: "primary.contrastText",
+                    color: "primary.contrastText",
+                    ":hover": { backgroundColor: "primary.main" },
+                    borderRadius: 4, //Same as other buttons, add to theme maybe?
                   }}
                 >
-                  Logout
+                  Logout 
                 </Button>
               </>
             )}

@@ -401,7 +401,7 @@ export default function BlogPage() {
     <Container sx={{ py: 6 }}>
       <Box sx={{ textAlign: "center", mb: 4 }}>
         <Typography
-          variant="h3"
+          variant="h1"
           sx={{ fontWeight: 900, letterSpacing: -0.5, mb: 2 }}
         >
           Blog

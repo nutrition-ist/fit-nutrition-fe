@@ -4,14 +4,14 @@ import { createTheme } from "@mui/material/styles";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#4caf50", // Green for primary buttons and accents
+      main: "#006B5E", // Green for primary buttons and accents
       contrastText: "#ffffff", // White text for buttons
     },
     secondary: {
       main: "#388e3c", // Darker green for secondary actions
     },
     success: {
-      main: "#81c784", // Light green for success indicators
+      main: "#e8f5e9", // Light green for success indicators
     },
     background: {
       default: "#ffffff", // White background
@@ -25,9 +25,9 @@ const theme = createTheme({
           borderRadius: "8px", // Rounded buttons
         },
         containedPrimary: {
-          backgroundColor: "#4caf50", // Green button
+          backgroundColor: "#006B5E", // Green button
           "&:hover": {
-            backgroundColor: "#388e3c", // Darker green on hover
+            backgroundColor: "#00614e", // Darker green on hover
           },
         },
       },
@@ -36,7 +36,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "#e8f5e9", // Light green for chips
-          color: "#1b5e20", // Dark green text
+          color: "#006B5E", // Dark green text
         },
       },
     },

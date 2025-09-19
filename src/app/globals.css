@@ -3,13 +3,13 @@
 
 :root {
   --background: #f0fdf4; /* Light green background */
-  --foreground: #1b5e20; /* Dark green text */
+  --foreground: #006B5E; /* Dark green text */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1a3e1c; /* Dark green background */
-    --foreground: #c8e6c9; /* Light green text for contrast */
+    --background: #e8f5e9; /* Dark green background */
+    --foreground: #388e3c; /* Light green text for contrast */
   }
 }
 .slick-dots li button:before {

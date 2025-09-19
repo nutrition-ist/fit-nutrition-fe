@@ -51,7 +51,7 @@ const DesktopFilterBar: FC<FilterBarProps> = ({
         mb: { xs: 3, md: 5 },
       }}
     >
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: space(3) }}>
+      <Typography variant="h1" sx={{ mb: space(3) }}>
         Find the Right Expert
       </Typography>
 
@@ -82,17 +82,17 @@ const DesktopFilterBar: FC<FilterBarProps> = ({
           );
         })}
         <Chip
+          variant="filled" //Correct way to use the component
           label="Reset"
           onClick={onReset}
           clickable
           sx={{
             borderRadius: 999,
             fontWeight: 600,
-            border: "1px solid #007560",
-            bgcolor: "#007560",
-            color: "#fff",
+            bgcolor: "primary.main", //Correct way to use the theme.js, although you'd need to define a variant since default is gray.
+            color: "primary.contrastText", //Correct way to use the theme.js
             "&:hover": { bgcolor: "#00614e" },
-            ml: "auto",
+            ml: "auto", //What does this do?
           }}
         />
       </Stack>

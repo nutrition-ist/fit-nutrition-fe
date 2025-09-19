@@ -34,7 +34,7 @@ const InitialNavbar: React.FC = () => {
               mx: 1,
               color: "white", 
               "&:hover": {
-                color: "#c8e6c9", 
+                color: "#e8f5e9", 
               },
             }}
           >
@@ -48,7 +48,7 @@ const InitialNavbar: React.FC = () => {
               mx: 1,
               color: "white",
               "&:hover": {
-                color: "#c8e6c9",
+                color: "#e8f5e9",
               },
             }}
           >
@@ -62,7 +62,7 @@ const InitialNavbar: React.FC = () => {
               mx: 1,
               color: "white",
               "&:hover": {
-                color: "#c8e6c9",
+                color: "#e8f5e9",
               },
             }}
           >
@@ -76,7 +76,7 @@ const InitialNavbar: React.FC = () => {
               mx: 1,
               color: "white",
               "&:hover": {
-                color: "#c8e6c9",
+                color: "#e8f5e9",
               },
             }}
           >

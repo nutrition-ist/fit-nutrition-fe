@@ -178,8 +178,8 @@ const RegisterPage: React.FC = () => {
             <Checkbox checked={agree} onChange={(_, v) => setAgree(v)} />
           }
           label={
-            <Typography variant="caption">
-              I agree to the <Link href="/terms">Terms of Service</Link> and
+            <Typography variant="body1">
+              By clicking this, I agree to the <Link href="/terms">Terms of Service</Link> and
               <Link href="/privacy"> Privacy Policy</Link>.
             </Typography>
           }

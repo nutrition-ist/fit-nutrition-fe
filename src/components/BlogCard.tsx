@@ -64,7 +64,7 @@ const BlogCard: React.FC<Props> = ({ post, href, onOpen }) => {
       )}
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {/* Title (author intentionally NOT included here) */}
-        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+        <Typography variant="h1" color="primary.main" sx={{ fontSize: "2em" }}>
           {post.title}
         </Typography>
 
