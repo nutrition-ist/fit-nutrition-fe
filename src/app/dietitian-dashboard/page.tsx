@@ -15,8 +15,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -35,7 +33,6 @@ import RegisterPatient from "@/components/RegisterPatient";
 import SocialLinks from "@/components/SocialLinks";
 import RecipeList from "@/components/RecipeList";
 
-/* -------------------- types from API -------------------- */
 interface Dietitian {
   id: number;
   username: string;
@@ -54,14 +51,25 @@ interface Dietitian {
   whatsapp: string | null;
 }
 
-interface PatientRow {
+interface Patient {
   id: number;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
   phone: string;
-  dietician: number; 
+  dietitian: number;
+  profile_picture: string | null;
+}
+
+interface ApiPatient {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  dietician: number;
   profile_picture: string | null;
 }
 
@@ -70,20 +78,21 @@ interface Appointment {
   patient: number;
   dietician: number;
   date_time: string;
-  is_active: boolean;
+  is_active?: boolean;
+  is_approved?: boolean;
 }
 
 interface DietitianDashboardData {
   dietitian: Dietitian;
-  patients_list: PatientRow[];
+  patients_list: Patient[];
   appointment_list: Appointment[];
 }
 
-/* API response that may contain either dietitian|dietician */
 type ApiMeResponse = {
   dietitian?: Dietitian;
   dietician?: Dietitian;
-  patients_list?: PatientRow[];
+  patients_list?: ApiPatient[];
+  appointment_list?: Appointment[];
 };
 
 const DietitianDashboard: React.FC = () => {
@@ -93,23 +102,14 @@ const DietitianDashboard: React.FC = () => {
 
   const [openPatientDialog, setOpenPatientDialog] = useState(false);
   const [plannerOpen, setPlannerOpen] = useState(false);
-  const [toast, setToast] = useState<{
-    type: "success" | "error";
-    msg: string;
-  } | null>(null);
 
   const [apptFilter, setApptFilter] = useState<"today" | "week" | "all">(
     "week"
   );
 
-  const apiUrl =
+  const apiBase =
     process.env.NEXT_PUBLIC_API_URL ||
     "https://hazalkaynak.pythonanywhere.com/";
-
-  const authHeaders = () => {
-    const token = localStorage.getItem("accessToken");
-    return { Authorization: `Bearer ${token}` };
-  };
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -118,24 +118,42 @@ const DietitianDashboard: React.FC = () => {
       return;
     }
 
-    const fetchData = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await axios.get<ApiMeResponse>(`${apiUrl}dietitian/me/`, {
-          headers: authHeaders(),
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const me = await axios.get<ApiMeResponse>(`${apiBase}dietitian/me/`, {
+          headers,
         });
 
-        const me: DietitianDashboardData = {
-          dietitian: (res.data.dietitian ?? res.data.dietician)!,
-          patients_list: res.data.patients_list ?? [],
+        const apiPatients = me.data.patients_list ?? [];
+        const normalizedPatients: Patient[] = apiPatients.map((p) => ({
+          id: p.id,
+          username: p.username,
+          email: p.email,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          phone: p.phone,
+          dietitian: p.dietician,
+          profile_picture: p.profile_picture,
+        }));
+
+        const norm: DietitianDashboardData = {
+          dietitian: (me.data.dietitian ?? me.data.dietician)!,
+          patients_list: normalizedPatients,
           appointment_list: [],
         };
 
-        const ar = await axios.get<Appointment[]>(`${apiUrl}appointment/get/`, {
-          headers: authHeaders(),
-        });
+        let appts: Appointment[] = [];
+        try {
+          const r = await axios.get(`${apiBase}appointment/get/`, { headers });
+          const payload = r.data;
+          if (Array.isArray(payload)) appts = payload as Appointment[];
+          else if (Array.isArray(payload?.appointments))
+            appts = payload.appointments as Appointment[];
+        } catch {}
 
-        me.appointment_list = Array.isArray(ar.data) ? ar.data : [];
-        setProfile(me);
+        setProfile({ ...norm, appointment_list: appts });
       } catch (err) {
         if (axios.isAxiosError(err) && err.response?.status === 401) {
           localStorage.removeItem("accessToken");
@@ -148,9 +166,26 @@ const DietitianDashboard: React.FC = () => {
       }
     };
 
-    void fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void fetchAll();
+  }, [apiBase]);
+
+  const refreshAppointments = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token || !profile) return;
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const r = await axios.get(`${apiBase}appointment/get/`, { headers });
+      const payload = r.data;
+      const appts: Appointment[] = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.appointments)
+        ? payload.appointments
+        : [];
+      setProfile((prev) =>
+        prev ? { ...prev, appointment_list: appts } : prev
+      );
+    } catch {}
+  };
 
   const upcomingThisWeek = useMemo(() => {
     if (!profile?.appointment_list) return 0;
@@ -163,62 +198,42 @@ const DietitianDashboard: React.FC = () => {
   const newNotes = 4;
   const needsReview = 5;
 
-  type RegisteredPatient = {
-    id: number;
-    username: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
-    dietitian: number;
-    profile_picture: string | null;
-  };
-
-  const toRow = (
-    p: RegisteredPatient,
-    fallbackDietician: number
-  ): PatientRow => ({
-    id: p.id,
-    username: p.username,
-    email: p.email,
-    first_name: p.first_name,
-    last_name: p.last_name,
-    phone: p.phone,
-    dietician: p.dietitian || fallbackDietician || 0,
-    profile_picture: p.profile_picture,
-  });
-
-  const handleNewPatient = (newPatient: RegisteredPatient) =>
-    setProfile((prev) =>
+  const handleNewPatient = (newPatient: Patient) =>
+    setProfile((prev: DietitianDashboardData | null) =>
       prev
-        ? {
-            ...prev,
-            patients_list: [
-              ...prev.patients_list,
-              toRow(newPatient, prev.dietitian.id),
-            ],
-          }
+        ? { ...prev, patients_list: [...prev.patients_list, newPatient] }
         : prev
     );
 
-  const cancelAppointment = async (id: number) => {
+  const handleConfirmAppt = async (id: number) => {
+    const ok = window.confirm("Do you want to confirm this appointment?");
+    if (!ok) return;
     try {
-      await axios.delete(`${apiUrl}appointment/delete/${id}/`, {
-        headers: authHeaders(),
-      });
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              appointment_list: prev.appointment_list.filter(
-                (a) => a.id !== id
-              ),
-            }
-          : prev
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("No token");
+      await axios.put(
+        `${apiBase}appointment/approve/${id}/`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setToast({ type: "success", msg: "Appointment cancelled." });
+      await refreshAppointments();
     } catch {
-      setToast({ type: "error", msg: "Failed to cancel appointment." });
+      alert("Could not confirm the appointment.");
+    }
+  };
+
+  const handleDeleteAppt = async (id: number) => {
+    const ok = window.confirm("Cancel this appointment?");
+    if (!ok) return;
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) throw new Error("No token");
+      await axios.delete(`${apiBase}appointment/delete/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await refreshAppointments();
+    } catch {
+      alert("Failed to cancel appointment.");
     }
   };
 
@@ -250,7 +265,6 @@ const DietitianDashboard: React.FC = () => {
         Welcome Back, {profile.dietitian.first_name}!
       </Typography>
 
-      {/* KPI tiles */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -275,7 +289,6 @@ const DietitianDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Clients */}
       <Stack
         direction="row"
         alignItems="center"
@@ -314,7 +327,6 @@ const DietitianDashboard: React.FC = () => {
         onPatientRegistered={handleNewPatient}
       />
 
-      {/* Appointments header */}
       <Stack
         direction={{ xs: "column", md: "row" }}
         justifyContent="space-between"
@@ -357,7 +369,6 @@ const DietitianDashboard: React.FC = () => {
         </Stack>
       </Stack>
 
-      {/* Appointments list (grid) */}
       <Grid container spacing={2}>
         {appointments
           .filter((a) => {
@@ -374,7 +385,7 @@ const DietitianDashboard: React.FC = () => {
                   id: a.id,
                   patient: a.patient,
                   date_time: a.date_time,
-                  is_active: a.is_active,
+                  is_active: a.is_active === true || a.is_approved === true,
                 }}
                 patients={profile.patients_list.map((p) => ({
                   id: p.id,
@@ -386,7 +397,6 @@ const DietitianDashboard: React.FC = () => {
           ))}
       </Grid>
 
-      {/* Recipes */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -407,7 +417,6 @@ const DietitianDashboard: React.FC = () => {
       </Stack>
       <RecipeList ownerId={profile.dietitian.id} limit={3} />
 
-      {/* Contact */}
       <Stack mt={6} spacing={1}>
         <Typography variant="h5" component="h2">
           Contact & Socials
@@ -417,7 +426,6 @@ const DietitianDashboard: React.FC = () => {
         <SocialLinks dietitian={profile.dietitian} />
       </Stack>
 
-      {/* Availability / Planner dialog */}
       <Dialog
         open={plannerOpen}
         onClose={() => setPlannerOpen(false)}
@@ -428,21 +436,20 @@ const DietitianDashboard: React.FC = () => {
         <DialogContent dividers>
           <AppointmentsCalendar
             role="dietitian"
-            appointments={profile.appointment_list as CalAppointment[]}
-            workingHours={{ startHour: 9, endHour: 17 }}
-            onDelete={cancelAppointment}
+            appointments={
+              profile.appointment_list as unknown as CalAppointment[]
+            }
+            workingHours={{ startHour: 9, endHour: 17, slotMinutes: 30 }}
+            blockedDates={[]}
+            onConfirm={handleConfirmAppt}
+            onDelete={handleDeleteAppt}
+            patientLookup={(id) => {
+              const p = profile.patients_list.find((x) => x.id === id);
+              return p ? `${p.first_name} ${p.last_name}` : undefined;
+            }}
           />
         </DialogContent>
       </Dialog>
-
-      <Snackbar
-        open={!!toast}
-        autoHideDuration={2500}
-        onClose={() => setToast(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        {toast ? <Alert severity={toast.type}>{toast.msg}</Alert> : undefined}
-      </Snackbar>
     </Box>
   );
 };

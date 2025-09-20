@@ -284,6 +284,8 @@ const PatientDashboard: React.FC = () => {
   };
 
   const cancelAppointment = async (id: number) => {
+    const ok = window.confirm("Cancel this appointment?");
+    if (!ok) return;
     try {
       await axios.delete(`${api}appointment/delete/${id}/`, {
         headers: authHeaders(),
@@ -340,7 +342,6 @@ const PatientDashboard: React.FC = () => {
         </Button>
       </Stack>
 
-      {/* KPI row */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -365,7 +366,6 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Left tiles + Right summary */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} md={6}>
           <Grid container spacing={2}>
@@ -407,7 +407,6 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Dietitian card */}
       <Box mt={2} mb={3}>
         <Typography variant="h5" component="h2" gutterBottom>
           Your dietitian
@@ -425,7 +424,6 @@ const PatientDashboard: React.FC = () => {
         )}
       </Box>
 
-      {/* Appointments section (cards + interactive calendar) */}
       {!!appointments.length && (
         <Box mt={1} mb={3}>
           <Typography variant="h5" component="h2" gutterBottom>
@@ -487,9 +485,7 @@ const PatientDashboard: React.FC = () => {
             await axios.post(`${api}patient/preferences/`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             });
-          } catch {
-            /* swallow */
-          }
+          } catch {}
         }}
       />
 

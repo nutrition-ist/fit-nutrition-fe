@@ -20,13 +20,13 @@ import {
   Stack,
 } from "@mui/material";
 
-/** ---------------- Types ---------------- */
 export interface Appointment {
   id: number;
   patient: number;
   dietician: number;
   date_time: string;
-  is_active: boolean;
+  is_active?: boolean;
+  is_approved?: boolean;
 }
 
 export interface AppointmentsCalendarProps {
@@ -41,12 +41,12 @@ export interface AppointmentsCalendarProps {
   blockedDates?: string[];
   onCreate?: (dateTimeIso: string) => Promise<void> | void;
   onDelete?: (id: number) => Promise<void> | void;
+  onConfirm?: (id: number) => Promise<void> | void;
   onToggleBlockDate?: (date: string, block: boolean) => void;
+  patientLookup?: (patientId: number) => string | undefined;
 }
 
-/** --------------- Component --------------- */
 const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   role = "patient",
   appointments,
   workingDays = [false, true, true, true, true, true, false],
@@ -54,7 +54,9 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
   blockedDates = [],
   onCreate,
   onDelete,
+  onConfirm,
   onToggleBlockDate,
+  patientLookup,
 }) => {
   const slotMinutes = workingHours.slotMinutes ?? 60;
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
@@ -73,11 +75,8 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
   const isWorkingDay = (date: Dayjs) => workingDays[date.day()] === true;
 
   const shouldDisableDate = (date: Dayjs) => {
-    // Past days
     if (date.isBefore(dayjs().startOf("day"))) return true;
-    // Non-working days
     if (!isWorkingDay(date)) return true;
-    // Entire day blocked
     if (isBlocked(date)) return true;
     return false;
   };
@@ -93,18 +92,13 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
       bookedMap.set(`${d.hour()}:${d.minute()}`, a);
     });
 
-    const list: {
-      start: Dayjs;
-      end: Dayjs;
-      booked?: Appointment;
-    }[] = [];
+    const list: { start: Dayjs; end: Dayjs; booked?: Appointment }[] = [];
 
     const start = selectedDate
       .hour(workingHours.startHour)
       .minute(0)
       .second(0)
       .millisecond(0);
-
     const end = selectedDate
       .hour(workingHours.endHour)
       .minute(0)
@@ -116,11 +110,11 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
       t.isBefore(end);
       t = t.add(slotMinutes, "minute")
     ) {
-      const key = `${t.hour()}:${t.minute()}`;
+      const k = `${t.hour()}:${t.minute()}`;
       list.push({
         start: t.clone(),
         end: t.clone().add(slotMinutes, "minute"),
-        booked: bookedMap.get(key),
+        booked: bookedMap.get(k),
       });
     }
 
@@ -139,7 +133,6 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box display="flex" flexDirection={{ xs: "column", md: "row" }} gap={2}>
-        {/* Calendar */}
         <Card sx={{ minWidth: 280 }}>
           <CardContent>
             <Stack
@@ -173,7 +166,6 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
           </CardContent>
         </Card>
 
-        {/* Slots */}
         <Card sx={{ flex: 1 }}>
           <CardContent>
             <Typography variant="h6" component="h2" gutterBottom>
@@ -191,43 +183,80 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
                   const label = `${start.format("HH:mm")} – ${end.format(
                     "HH:mm"
                   )}`;
-                  const secondary = booked
-                    ? "Booked (tap to cancel)"
-                    : onCreate
-                    ? "Available (tap to book)"
-                    : "Available";
 
-                  const clickable =
-                    (!!booked && !!onDelete) || (!booked && !!onCreate);
+                  let secondary = "Available";
+                  let clickable = false;
+                  let bgcolor: string | undefined = "success.light";
+                  let onClick: (() => void) | undefined;
 
-                  const handleClick = async () => {
-                    if (booked && onDelete) {
-                      await onDelete(booked.id);
-                    } else if (!booked && onCreate) {
-                      await onCreate(start.toISOString());
+                  if (booked) {
+                    const approved = booked.is_approved === true;
+                    const who = patientLookup?.(booked.patient);
+
+                    if (approved) {
+                      secondary = `Booked${
+                        who ? ` • ${who}` : ""
+                      } (tap to cancel)`;
+                      bgcolor = "grey.200";
+                      if (onDelete) {
+                        clickable = true;
+                        onClick = () => onDelete(booked.id);
+                      }
+                    } else {
+                      if (role === "dietitian") {
+                        secondary = `Pending${
+                          who ? ` • ${who}` : ""
+                        } (tap to confirm or cancel)`;
+                        bgcolor = "#ffa726";
+                        if (onConfirm || onDelete) {
+                          clickable = true;
+                          onClick = async () => {
+                            if (onConfirm && onDelete) {
+                              const ok = window.confirm(
+                                "Confirm this appointment? Click OK to confirm, Cancel to cancel it."
+                              );
+                              if (ok) await onConfirm(booked.id);
+                              else await onDelete(booked.id);
+                            } else if (onConfirm) {
+                              await onConfirm(booked.id);
+                            } else if (onDelete) {
+                              await onDelete(booked.id);
+                            }
+                          };
+                        }
+                      } else {
+                        secondary = "Pending (tap to cancel)";
+                        bgcolor = "#ffa726";
+                        if (onDelete) {
+                          clickable = true;
+                          onClick = () => onDelete(booked.id);
+                        }
+                      }
                     }
-                  };
+                  } else if (onCreate) {
+                    secondary = "Available (tap to book)";
+                    clickable = true;
+                    onClick = () => onCreate(start.toISOString());
+                  }
 
                   return (
-                    <ListItem key={label} disablePadding sx={{ mb: 1 }}>
+                    <ListItem key={label} disablePadding>
                       {clickable ? (
                         <ListItemButton
-                          onClick={handleClick}
-                          sx={{
-                            bgcolor: booked ? "grey.200" : "success.light",
-                            borderRadius: 1,
-                          }}
+                          onClick={onClick}
+                          sx={{ bgcolor, mb: 1, borderRadius: 1 }}
                         >
                           <ListItemText primary={label} secondary={secondary} />
                         </ListItemButton>
                       ) : (
                         <Box
                           sx={{
-                            width: "100%",
-                            bgcolor: booked ? "grey.200" : "success.light",
+                            bgcolor,
+                            mb: 1,
                             borderRadius: 1,
                             px: 2,
-                            py: 1,
+                            py: 1.25,
+                            width: 1,
                           }}
                         >
                           <ListItemText primary={label} secondary={secondary} />
