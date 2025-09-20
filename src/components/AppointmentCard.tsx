@@ -9,12 +9,12 @@ import {
 } from "@mui/material";
 import dayjs from "dayjs";
 
-/* ---------- local interfaces ---------- */
 interface Appointment {
   id: number;
   patient: number;
   date_time: string;
-  is_active: boolean; // true ↔ active / confirmed, false ↔ cancelled
+  is_active?: boolean;
+  is_cancelled?: boolean;
 }
 
 interface Patient {
@@ -26,33 +26,17 @@ interface Patient {
 interface Props {
   appointment: Appointment;
   patients: Patient[];
-  dense?: boolean; // list view (no card chrome) vs. grid view
+  dense?: boolean;
 }
-/* -------------------------------------- */
 
-/**
- * Returns the correct <Chip /> for an appointment.
- *  – Cancelled  → red chip (always)
- *  – Confirmed  → green chip (future & active)
- *  – Pending    → yellow chip (past & still active)
- */
 const renderStatusChip = (appt: Appointment) => {
-  if (!appt.is_active) {
+  if (appt.is_cancelled) {
     return <Chip label="Cancelled" size="small" color="error" />;
   }
-
-  const apptTime = dayjs(appt.date_time);
-  const now = dayjs();
-
-  const isFuture = apptTime.isAfter(now);
-
-  return (
-    <Chip
-      label={isFuture ? "Confirmed" : "Pending"}
-      size="small"
-      color={isFuture ? "success" : "warning"}
-    />
-  );
+  if (appt.is_active) {
+    return <Chip label="Confirmed" size="small" color="success" />;
+  }
+  return <Chip label="Pending" size="small" color="warning" />;
 };
 
 const AppointmentCard: React.FC<Props> = ({ appointment, patients, dense }) => {

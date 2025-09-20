@@ -15,6 +15,8 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
@@ -34,8 +36,11 @@ import DietitianCard, {
   Dietitian as DietitianType,
 } from "@/components/DietitianCard";
 import AppointmentCard from "@/components/AppointmentCard";
-import AppointmentsCalendar from "@/components/AppointmentsCalendar";
+import AppointmentsCalendar, {
+  Appointment as CalAppointment,
+} from "@/components/AppointmentsCalendar";
 
+/* ---------- types ---------- */
 interface Patient {
   id: number;
   username: string;
@@ -57,11 +62,10 @@ interface Appointment {
 
 interface PatientDashboardData {
   patient: Patient;
-  appointments?: Appointment[];
-  upcoming_appointments?: Appointment[];
   meal_plans?: { id: number; title: string }[] | number;
 }
 
+/* ---------- helpers ---------- */
 type DietitianWire = Partial<DietitianType> & { id?: number };
 type DietitianInput =
   | number
@@ -72,7 +76,6 @@ type DietitianInput =
 
 const normalizeDietitian = (raw: DietitianInput): DietitianType | null => {
   if (raw == null) return null;
-
   const source: number | DietitianWire =
     typeof raw === "object" && "dietician" in raw && raw.dietician !== undefined
       ? raw.dietician
@@ -92,7 +95,6 @@ const normalizeDietitian = (raw: DietitianInput): DietitianType | null => {
       online_booking: true,
     };
   }
-
   return {
     id: Number(source.id ?? 0),
     username: String(source.username ?? ""),
@@ -154,16 +156,27 @@ const DashTile: React.FC<DashTileProps> = ({
   </Grid>
 );
 
+/* ---------- page ---------- */
 const PatientDashboard: React.FC = () => {
   const [data, setData] = useState<PatientDashboardData | null>(null);
   const [dietitian, setDietitian] = useState<DietitianType | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
   const [prefsOpen, setPrefsOpen] = useState<boolean>(false);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    msg: string;
+  } | null>(null);
 
   const api =
     process.env.NEXT_PUBLIC_API_URL ||
     "https://hazalkaynak.pythonanywhere.com/";
+
+  const authHeaders = () => {
+    const token = localStorage.getItem("accessToken");
+    return { Authorization: `Bearer ${token}` };
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -171,18 +184,14 @@ const PatientDashboard: React.FC = () => {
       window.location.href = "/login?redirect=patient-dashboard";
       return;
     }
-    const headers = { Authorization: `Bearer ${token}` };
 
     (async () => {
       try {
-        const res = await axios.get(`${api}patient/me/`, { headers });
-
+        const res = await axios.get(`${api}patient/me/`, {
+          headers: authHeaders(),
+        });
         const payload: PatientDashboardData = {
           patient: res.data.patient ?? res.data,
-          appointments:
-            res.data.appointments ?? res.data.upcoming_appointments ?? [],
-          upcoming_appointments:
-            res.data.upcoming_appointments ?? res.data.appointments ?? [],
           meal_plans: res.data.meal_plans ?? [],
         };
         setData(payload);
@@ -191,15 +200,11 @@ const PatientDashboard: React.FC = () => {
         const normalized = normalizeDietitian(dField);
         if (normalized && normalized.id && !normalized.username) {
           try {
-            const r1 = await axios.get(`${api}dietician/${normalized.id}/`, {
-              headers,
-            });
+            const r1 = await axios.get(`${api}dietician/${normalized.id}/`);
             setDietitian(normalizeDietitian(r1.data));
           } catch {
             try {
-              const r2 = await axios.get(`${api}dietitian/${normalized.id}/`, {
-                headers,
-              });
+              const r2 = await axios.get(`${api}dietitian/${normalized.id}/`);
               setDietitian(normalizeDietitian(r2.data));
             } catch {
               setDietitian(null);
@@ -208,48 +213,24 @@ const PatientDashboard: React.FC = () => {
         } else {
           setDietitian(normalized);
         }
+
+        const ar = await axios.get<Appointment[]>(`${api}appointment/get/`, {
+          headers: authHeaders(),
+        });
+        setAppointments(Array.isArray(ar.data) ? ar.data : []);
       } catch (e) {
-        if (axios.isAxiosError(e)) {
-          if (e.response?.status === 401) {
-            localStorage.removeItem("accessToken");
-            window.location.href = "/login?redirect=patient-dashboard";
-            return;
-          }
-          if (e.response?.status === 404) {
-            const username = localStorage.getItem("username") || "Patient";
-            setData({
-              patient: {
-                id: -1,
-                username,
-                email: "",
-                first_name: username,
-                last_name: "",
-                phone: null,
-                dietician: null,
-                profile_picture: null,
-              },
-              appointments: [],
-              upcoming_appointments: [],
-              meal_plans: [],
-            });
-            setLoading(false);
-            return;
-          }
+        if (axios.isAxiosError(e) && e.response?.status === 401) {
+          localStorage.removeItem("accessToken");
+          window.location.href = "/login?redirect=patient-dashboard";
+          return;
         }
         setErr("Failed to load your profile.");
       } finally {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
-
-  const appointments: Appointment[] = useMemo(
-    () =>
-      (data?.upcoming_appointments ??
-        data?.appointments ??
-        []) as Appointment[],
-    [data]
-  );
 
   const nextApptText = useMemo(() => {
     if (!appointments.length) return "No appointment booked";
@@ -263,6 +244,58 @@ const PatientDashboard: React.FC = () => {
   const mealPlanCount = Array.isArray(data?.meal_plans)
     ? data!.meal_plans!.length
     : Number(data?.meal_plans ?? 0);
+
+  const myDietitianHref =
+    typeof data?.patient.dietician === "number"
+      ? `/dietitian/${data?.patient.dietician}`
+      : (data?.patient.dietician as DietitianType | null)?.username
+      ? `/dietitian/${(data?.patient.dietician as DietitianType).username}`
+      : "/dietitian";
+
+  const createAppointment = async (dateTimeIso: string) => {
+    if (!data?.patient) return;
+    const dieticianId =
+      typeof data.patient.dietician === "number"
+        ? data.patient.dietician
+        : (data.patient.dietician as DietitianType | null)?.id || 0;
+
+    if (!dieticianId) {
+      setToast({ type: "error", msg: "No dietitian linked to your account." });
+      return;
+    }
+
+    try {
+      const payload = {
+        patient: data.patient.id,
+        dietician: dieticianId,
+        date_time: dateTimeIso,
+      };
+      await axios.post(`${api}appointment/add/`, payload, {
+        headers: authHeaders(),
+      });
+      const ar = await axios.get<Appointment[]>(`${api}appointment/get/`, {
+        headers: authHeaders(),
+      });
+      setAppointments(Array.isArray(ar.data) ? ar.data : []);
+      setToast({ type: "success", msg: "Appointment booked." });
+    } catch {
+      setToast({ type: "error", msg: "Failed to book appointment." });
+    }
+  };
+
+  const cancelAppointment = async (id: number) => {
+    const ok = window.confirm("Cancel this appointment?");
+    if (!ok) return;
+    try {
+      await axios.delete(`${api}appointment/delete/${id}/`, {
+        headers: authHeaders(),
+      });
+      setAppointments((prev) => prev.filter((a) => a.id !== id));
+      setToast({ type: "success", msg: "Appointment cancelled." });
+    } catch {
+      setToast({ type: "error", msg: "Failed to cancel appointment." });
+    }
+  };
 
   if (loading) {
     return (
@@ -289,13 +322,6 @@ const PatientDashboard: React.FC = () => {
     { id: p.id, first_name: p.first_name, last_name: p.last_name },
   ];
 
-  const myDietitianHref =
-    typeof p.dietician === "number"
-      ? `/dietitian/${p.dietician}`
-      : (p.dietician as DietitianType | null)?.username
-      ? `/dietitian/${(p.dietician as DietitianType).username}`
-      : "/dietitian";
-
   return (
     <Box px={{ xs: 2, md: 6 }} py={4}>
       <Stack
@@ -304,7 +330,7 @@ const PatientDashboard: React.FC = () => {
         justifyContent="space-between"
         mb={3}
       >
-        <Typography variant="h4" fontWeight={600}>
+        <Typography variant="h4" component="h1" fontWeight={600}>
           Welcome back, {p.first_name}!
         </Typography>
         <Button
@@ -316,7 +342,6 @@ const PatientDashboard: React.FC = () => {
         </Button>
       </Stack>
 
-      {/* KPI row */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -341,9 +366,7 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Left tiles + Right summary */}
       <Grid container spacing={2} mb={4}>
-        {/* LEFT column of tiles */}
         <Grid item xs={12} md={6}>
           <Grid container spacing={2}>
             <DashTile
@@ -385,7 +408,7 @@ const PatientDashboard: React.FC = () => {
       </Grid>
 
       <Box mt={2} mb={3}>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h5" component="h2" gutterBottom>
           Your dietitian
         </Typography>
         {dietitian ? (
@@ -403,7 +426,7 @@ const PatientDashboard: React.FC = () => {
 
       {!!appointments.length && (
         <Box mt={1} mb={3}>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h5" component="h2" gutterBottom>
             Your appointments
           </Typography>
           <Grid container spacing={2}>
@@ -423,7 +446,13 @@ const PatientDashboard: React.FC = () => {
           </Grid>
 
           <Box mt={2}>
-            <AppointmentsCalendar appointments={appointments} />
+            <AppointmentsCalendar
+              role="patient"
+              appointments={appointments as CalAppointment[]}
+              workingHours={{ startHour: 9, endHour: 17 }}
+              onCreate={createAppointment}
+              onDelete={cancelAppointment}
+            />
           </Box>
         </Box>
       )}
@@ -436,7 +465,9 @@ const PatientDashboard: React.FC = () => {
         alignItems="center"
         mb={1}
       >
-        <Typography variant="h6">Recommended recipes</Typography>
+        <Typography variant="h5" component="h2">
+          Recommended recipes
+        </Typography>
         <Button href="/recipes" variant="outlined" size="small">
           Browse all
         </Button>
@@ -457,6 +488,15 @@ const PatientDashboard: React.FC = () => {
           } catch {}
         }}
       />
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={2500}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {toast ? <Alert severity={toast.type}>{toast.msg}</Alert> : undefined}
+      </Snackbar>
     </Box>
   );
 };
