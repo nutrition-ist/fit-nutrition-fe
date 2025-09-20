@@ -1,24 +1,26 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import {
+  Alert,
   Box,
-  Typography,
   Card,
   CardContent,
+  Divider,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
-  Divider,
-  Alert,
+  Typography,
+  Chip,
   Stack,
-  Button,
 } from "@mui/material";
 
+/** ---------------- Types ---------------- */
 export interface Appointment {
   id: number;
   patient: number;
@@ -27,85 +29,112 @@ export interface Appointment {
   is_active: boolean;
 }
 
-export type Role = "patient" | "dietitian";
-
 export interface AppointmentsCalendarProps {
+  role?: "dietitian" | "patient";
   appointments: Appointment[];
+  workingDays?: boolean[];
   workingHours?: {
     startHour: number;
     endHour: number;
+    slotMinutes?: number;
   };
-  role?: Role;
-  onCreate?: (dateTimeIso: string) => void; 
-  onDelete?: (appointmentId: number) => void;
+  blockedDates?: string[];
+  onCreate?: (dateTimeIso: string) => Promise<void> | void;
+  onDelete?: (id: number) => Promise<void> | void;
+  onToggleBlockDate?: (date: string, block: boolean) => void;
 }
 
+/** --------------- Component --------------- */
 const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
-  appointments,
-  workingHours = { startHour: 9, endHour: 17 },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   role = "patient",
+  appointments,
+  workingDays = [false, true, true, true, true, true, false],
+  workingHours = { startHour: 9, endHour: 17, slotMinutes: 60 },
+  blockedDates = [],
   onCreate,
   onDelete,
+  onToggleBlockDate,
 }) => {
+  const slotMinutes = workingHours.slotMinutes ?? 60;
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
 
-  const appointmentsByDay = useMemo(() => {
-    return appointments.reduce<Record<string, Appointment[]>>((acc, appt) => {
-      const k = dayjs(appt.date_time).format("YYYY-MM-DD");
-      (acc[k] ||= []).push(appt);
+  const apptsByDay = useMemo(() => {
+    return appointments.reduce((acc, appt) => {
+      const key = dayjs(appt.date_time).format("YYYY-MM-DD");
+      (acc[key] ||= []).push(appt);
       return acc;
-    }, {});
+    }, {} as Record<string, Appointment[]>);
   }, [appointments]);
 
-  const shouldDisableDate = (date: Dayjs): boolean => {
+  const isBlocked = (date: Dayjs) =>
+    blockedDates.includes(date.format("YYYY-MM-DD"));
+
+  const isWorkingDay = (date: Dayjs) => workingDays[date.day()] === true;
+
+  const shouldDisableDate = (date: Dayjs) => {
+    // Past days
     if (date.isBefore(dayjs().startOf("day"))) return true;
-
-    const dateKey = date.format("YYYY-MM-DD");
-    const dayAppointments = appointmentsByDay[dateKey] || [];
-    const totalHours = workingHours.endHour - workingHours.startHour;
-
-    return dayAppointments.length >= totalHours;
+    // Non-working days
+    if (!isWorkingDay(date)) return true;
+    // Entire day blocked
+    if (isBlocked(date)) return true;
+    return false;
   };
 
-  const timeSlots = useMemo(() => {
+  const slots = useMemo(() => {
     if (!selectedDate) return [];
+    const key = selectedDate.format("YYYY-MM-DD");
+    const dayAppts = apptsByDay[key] || [];
 
-    const dateKey = selectedDate.format("YYYY-MM-DD");
-    const dayAppointments = (appointmentsByDay[dateKey] || []).sort(
-      (a, b) => dayjs(a.date_time).valueOf() - dayjs(b.date_time).valueOf()
-    );
-    const bookedByHour = new Map<number, Appointment>();
-    dayAppointments.forEach((a) => {
-      bookedByHour.set(dayjs(a.date_time).hour(), a);
+    const bookedMap = new Map<string, Appointment>();
+    dayAppts.forEach((a) => {
+      const d = dayjs(a.date_time);
+      bookedMap.set(`${d.hour()}:${d.minute()}`, a);
     });
 
-    const out: Array<
-      | { hour: number; isBooked: false }
-      | { hour: number; isBooked: true; appt: Appointment }
-    > = [];
+    const list: {
+      start: Dayjs;
+      end: Dayjs;
+      booked?: Appointment;
+    }[] = [];
+
+    const start = selectedDate
+      .hour(workingHours.startHour)
+      .minute(0)
+      .second(0)
+      .millisecond(0);
+
+    const end = selectedDate
+      .hour(workingHours.endHour)
+      .minute(0)
+      .second(0)
+      .millisecond(0);
 
     for (
-      let hour = workingHours.startHour;
-      hour < workingHours.endHour;
-      hour++
+      let t = start.clone();
+      t.isBefore(end);
+      t = t.add(slotMinutes, "minute")
     ) {
-      const appt = bookedByHour.get(hour);
-      if (appt) out.push({ hour, isBooked: true, appt });
-      else out.push({ hour, isBooked: false });
+      const key = `${t.hour()}:${t.minute()}`;
+      list.push({
+        start: t.clone(),
+        end: t.clone().add(slotMinutes, "minute"),
+        booked: bookedMap.get(key),
+      });
     }
-    return out;
-  }, [selectedDate, appointmentsByDay, workingHours]);
 
-  const handleBook = (hour: number) => {
-    if (!selectedDate || !onCreate) return;
-    const dt = selectedDate.hour(hour).minute(0).second(0).millisecond(0);
-    onCreate(dt.toISOString());
-  };
+    return list;
+  }, [
+    selectedDate,
+    apptsByDay,
+    workingHours.endHour,
+    workingHours.startHour,
+    slotMinutes,
+  ]);
 
-  const handleCancel = (id: number) => {
-    if (!onDelete) return;
-    onDelete(id);
-  };
+  const dateTitle =
+    selectedDate?.format("MMMM DD, YYYY") ?? "Select a date to view";
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -113,80 +142,97 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
         {/* Calendar */}
         <Card sx={{ minWidth: 280 }}>
           <CardContent>
-            <Typography variant="h5" component="h2" gutterBottom>
-              Select a Date
-            </Typography>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="h6" component="h2" gutterBottom>
+                Select a Date
+              </Typography>
+              {onToggleBlockDate && selectedDate && (
+                <Chip
+                  size="small"
+                  color={isBlocked(selectedDate) ? "warning" : "default"}
+                  label={isBlocked(selectedDate) ? "Blocked" : "Block day"}
+                  onClick={() =>
+                    onToggleBlockDate(
+                      selectedDate.format("YYYY-MM-DD"),
+                      !isBlocked(selectedDate)
+                    )
+                  }
+                />
+              )}
+            </Stack>
+
             <DateCalendar
               value={selectedDate}
-              onChange={(newValue) => setSelectedDate(newValue)}
+              onChange={(d) => setSelectedDate(d)}
               shouldDisableDate={shouldDisableDate}
             />
           </CardContent>
         </Card>
 
-        {/* Slots list */}
+        {/* Slots */}
         <Card sx={{ flex: 1 }}>
           <CardContent>
-            <Typography variant="h5" component="h2" gutterBottom>
-              {selectedDate
-                ? `Availability on ${selectedDate.format("MMMM DD, YYYY")}`
-                : "Select a date to view availability"}
+            <Typography variant="h6" component="h2" gutterBottom>
+              {dateTitle}
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
-            {!selectedDate || timeSlots.length === 0 ? (
-              <Alert severity="info">
-                No date selected or no hours defined.
-              </Alert>
+            {!selectedDate ? (
+              <Alert severity="info">No date selected.</Alert>
+            ) : slots.length === 0 ? (
+              <Alert severity="info">No working hours defined.</Alert>
             ) : (
               <List>
-                {timeSlots.map((slot) => {
-                  const hourLabel = `${slot.hour}:00 - ${slot.hour + 1}:00`;
-                  if (slot.isBooked) {
-                    return (
-                      <ListItem
-                        key={slot.hour}
-                        sx={{ bgcolor: "grey.100", mb: 1, borderRadius: 1 }}
-                        secondaryAction={
-                          <Stack direction="row" spacing={1}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="error"
-                              onClick={() => handleCancel(slot.appt.id)}
-                            >
-                              Cancel
-                            </Button>
-                          </Stack>
-                        }
-                      >
-                        <ListItemText
-                          primary={hourLabel}
-                          secondary={`Booked • ${dayjs(
-                            slot.appt.date_time
-                          ).format("h:mm A")}`}
-                        />
-                      </ListItem>
-                    );
-                  }
+                {slots.map(({ start, end, booked }) => {
+                  const label = `${start.format("HH:mm")} – ${end.format(
+                    "HH:mm"
+                  )}`;
+                  const secondary = booked
+                    ? "Booked (tap to cancel)"
+                    : onCreate
+                    ? "Available (tap to book)"
+                    : "Available";
+
+                  const clickable =
+                    (!!booked && !!onDelete) || (!booked && !!onCreate);
+
+                  const handleClick = async () => {
+                    if (booked && onDelete) {
+                      await onDelete(booked.id);
+                    } else if (!booked && onCreate) {
+                      await onCreate(start.toISOString());
+                    }
+                  };
 
                   return (
-                    <ListItem
-                      key={slot.hour}
-                      sx={{ bgcolor: "success.light", mb: 1, borderRadius: 1 }}
-                      secondaryAction={
-                        role === "patient" ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => handleBook(slot.hour)}
-                          >
-                            Book
-                          </Button>
-                        ) : null
-                      }
-                    >
-                      <ListItemText primary={hourLabel} secondary="Available" />
+                    <ListItem key={label} disablePadding sx={{ mb: 1 }}>
+                      {clickable ? (
+                        <ListItemButton
+                          onClick={handleClick}
+                          sx={{
+                            bgcolor: booked ? "grey.200" : "success.light",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <ListItemText primary={label} secondary={secondary} />
+                        </ListItemButton>
+                      ) : (
+                        <Box
+                          sx={{
+                            width: "100%",
+                            bgcolor: booked ? "grey.200" : "success.light",
+                            borderRadius: 1,
+                            px: 2,
+                            py: 1,
+                          }}
+                        >
+                          <ListItemText primary={label} secondary={secondary} />
+                        </Box>
+                      )}
                     </ListItem>
                   );
                 })}

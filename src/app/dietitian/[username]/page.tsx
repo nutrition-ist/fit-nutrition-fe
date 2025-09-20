@@ -3,7 +3,11 @@ import { Box, Typography } from "@mui/material";
 import axios from "axios";
 import { notFound } from "next/navigation";
 import Profile from "@/components/Profile";
+import DietitianBookingSection from "@/components/DietitianBookingSection";
+
 interface DietitianProfile {
+  id?: number;
+  username?: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -12,14 +16,14 @@ interface DietitianProfile {
   about_me: string;
   profile_picture?: string;
 }
+
 const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
   const all: { username: string }[] = [];
-  let url = "https://hazalkaynak.pythonanywhere.com/dietitian/?page_size=100"; // large page_size keeps requests low
+  let url = "https://hazalkaynak.pythonanywhere.com/dietitian/?page_size=100";
 
   try {
     while (url) {
       const { data } = await axios.get(url);
-
       if (Array.isArray(data.results)) {
         all.push(
           ...data.results.map((d: { username: string }) => ({
@@ -27,13 +31,11 @@ const fetchAllDietitians = async (): Promise<{ username: string }[]> => {
           }))
         );
       }
-
-      url = data.next; // DRF gives the next page URL; loop until it’s null
+      url = data.next;
     }
-  } catch (err) {
-    console.error("Error fetching dietitian list:", err);
+  } catch {
+    // ignore and return whatever we collected
   }
-
   return all;
 };
 
@@ -45,8 +47,7 @@ const fetchDietitianProfile = async (
       `https://hazalkaynak.pythonanywhere.com/dietitian/${username}`
     );
     return data?.dietician ?? null;
-  } catch (err) {
-    console.error("Error fetching profile:", err);
+  } catch {
     return null;
   }
 };
@@ -56,7 +57,6 @@ export async function generateStaticParams() {
   return dietitians.map(({ username }) => ({ username }));
 }
 
-// Main Profile Page Component
 export default async function DietitianProfilePage({
   params: paramsPromise,
 }: {
@@ -65,12 +65,12 @@ export default async function DietitianProfilePage({
   const { username } = await paramsPromise;
 
   let profile: DietitianProfile | null = null;
+
   if (typeof window !== "undefined") {
     const cached = sessionStorage.getItem(`dietitian_${username}`);
-    if (cached) {
-      profile = JSON.parse(cached);
-    }
+    if (cached) profile = JSON.parse(cached) as DietitianProfile;
   }
+
   if (!profile) {
     profile = await fetchDietitianProfile(username);
     if (!profile) return notFound();
@@ -80,12 +80,15 @@ export default async function DietitianProfilePage({
     <Box sx={{ maxWidth: 1000, mx: "auto", mt: 5, px: 3 }}>
       <Typography
         variant="h4"
+        component="h1"
         sx={{ fontWeight: "bold", mb: 3, textAlign: "center" }}
       >
         {profile.first_name} {profile.last_name}&apos;s Profile
       </Typography>
 
       <Profile profile={profile} />
+
+      {profile.id ? <DietitianBookingSection dieticianId={profile.id} /> : null}
     </Box>
   );
 }
