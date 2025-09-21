@@ -10,11 +10,11 @@ import {
   CardContent,
   CircularProgress,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   Grid,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
@@ -25,9 +25,13 @@ import {
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 import MealPlanBuilder from "@/components/MealPlanBuilder";
 
 type Role = "dietitian" | "patient";
+type PlannerRow = import("@/components/MealPlanBuilder").PlanRow;
 
 interface Dietitian {
   id: number;
@@ -157,12 +161,72 @@ const createMealPlan = async (payload: {
   }
 };
 
+const patchMealPlan = async (
+  id: number,
+  payload: Partial<{
+    title: string;
+    items: { label: string; recipe_id?: number }[];
+    note: string | null;
+  }>
+): Promise<MealPlan | null> => {
+  try {
+    const { data } = await axios.patch(
+      `${apiBase}mealplan/update/${id}/`,
+      payload,
+      { headers: authHeaders() }
+    );
+    return data as MealPlan;
+  } catch {
+    return null;
+  }
+};
+
+const deleteMealPlan = async (id: number): Promise<boolean> => {
+  try {
+    await axios.delete(`${apiBase}mealplan/delete/${id}/`, {
+      headers: authHeaders(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+type BuilderRow = {
+  time: string;
+  items: { label: string; recipe_id?: number }[];
+};
+
+const parseTimeFromLabel = (label: string) => {
+  const m = /^(\d{2}:\d{2})\s+(.*)$/.exec(label.trim());
+  if (m) return { time: m[1], text: m[2] };
+  return { time: "00:00", text: label.trim() };
+};
+
+const itemsToRows = (items: MealPlanItem[]): BuilderRow[] => {
+  const map = new Map<string, { label: string; recipe_id?: number }[]>();
+  items.forEach((it) => {
+    const { time, text } = parseTimeFromLabel(it.label);
+    const arr = map.get(time) ?? [];
+    arr.push({ label: text, recipe_id: it.recipe_id });
+    map.set(time, arr);
+  });
+  return Array.from(map.entries())
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([time, items]) => ({ time, items }));
+};
+
+const rowsToItems = (rows: BuilderRow[]): MealPlanItem[] =>
+  rows.flatMap((row) =>
+    row.items.map((it) => ({
+      label: `${row.time} ${it.label}`.trim(),
+      recipe_id: it.recipe_id,
+    }))
+  );
+
 const MealPlansPage: React.FC = () => {
   const [role, setRole] = useState<Role | null>(null);
   const [meDietitian, setMeDietitian] = useState<Dietitian | null>(null);
-  const [patientMe, setPatientMe] = useState<ApiMePatient["patient"] | null>(
-    null
-  );
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(
     null
@@ -175,8 +239,10 @@ const MealPlansPage: React.FC = () => {
   } | null>(null);
 
   const [creatorOpen, setCreatorOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<MealPlan | null>(null);
   const [planTitle, setPlanTitle] = useState("");
   const [note, setNote] = useState("");
+  const [builderRows, setBuilderRows] = useState<BuilderRow[]>([]);
 
   useEffect(() => {
     const boot = async () => {
@@ -211,7 +277,6 @@ const MealPlansPage: React.FC = () => {
         const p = await fetchPatientMe();
         if (p?.patient?.id) {
           setRole("patient");
-          setPatientMe(p.patient);
           const mine = await getMealPlansMine();
           setPlans(mine);
         }
@@ -240,6 +305,89 @@ const MealPlansPage: React.FC = () => {
 
   const canCreate =
     role === "dietitian" && !!selectedPatientId && !!meDietitian?.id;
+
+  const openCreate = () => {
+    setEditingPlan(null);
+    setPlanTitle("");
+    setNote("");
+    setBuilderRows([]);
+    setCreatorOpen(true);
+  };
+
+  const openEdit = (mp: MealPlan) => {
+    setEditingPlan(mp);
+    setPlanTitle(mp.title);
+    setNote(mp.note || "");
+    setBuilderRows(itemsToRows(mp.items || []));
+    setCreatorOpen(true);
+  };
+
+  const handleSaveFromBuilder = async (rows: BuilderRow[]) => {
+    if (!canCreate || !meDietitian) return;
+    if (!planTitle.trim()) {
+      setToast({ type: "error", msg: "Title is required." });
+      return;
+    }
+
+    if (editingPlan) {
+      const items = rowsToItems(rows);
+      const payload: Partial<{
+        title: string;
+        items: MealPlanItem[];
+        note: string | null;
+      }> = {
+        title: planTitle.trim(),
+        note: note.trim() || null,
+      };
+      if (items.length > 0) {
+        payload.items = items;
+      }
+      const updated = await patchMealPlan(editingPlan.id, payload);
+      if (updated) {
+        setPlans((prev) =>
+          prev.map((p) => (p.id === updated.id ? updated : p))
+        );
+        setToast({ type: "success", msg: "Meal plan updated." });
+        setCreatorOpen(false);
+        setEditingPlan(null);
+      } else {
+        setToast({ type: "error", msg: "Failed to update meal plan." });
+      }
+      return;
+    }
+
+    const items = rowsToItems(rows);
+    if (items.length === 0) {
+      setToast({ type: "error", msg: "Add at least one item." });
+      return;
+    }
+    const created = await createMealPlan({
+      patient: selectedPatientId as number,
+      dietician: meDietitian.id,
+      title: planTitle.trim(),
+      items,
+      note: note.trim() || undefined,
+    });
+    if (created) {
+      setPlans((prev) => [created, ...prev]);
+      setToast({ type: "success", msg: "Meal plan saved." });
+      setCreatorOpen(false);
+    } else {
+      setToast({ type: "error", msg: "Failed to save meal plan." });
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    const ok = window.confirm("Delete this meal plan?");
+    if (!ok) return;
+    const res = await deleteMealPlan(id);
+    if (res) {
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+      setToast({ type: "success", msg: "Meal plan deleted." });
+    } else {
+      setToast({ type: "error", msg: "Failed to delete meal plan." });
+    }
+  };
 
   if (loading) {
     return (
@@ -285,16 +433,24 @@ const MealPlansPage: React.FC = () => {
                   label="Search patients"
                   placeholder="Type to filter…"
                   fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <SearchIcon fontSize="small" sx={{ mr: 1 }} />
+                    ),
+                  }}
                   onChange={(e) => {
                     const q = e.target.value.toLowerCase();
-                    const filtered = patients
-                      .filter((p) =>
-                        `${p.first_name} ${p.last_name}`
-                          .toLowerCase()
-                          .includes(q)
-                      )
-                      .sort((a, b) => a.first_name.localeCompare(b.first_name));
-                    setPatients(filtered);
+                    setPatients((prev) =>
+                      prev.slice().sort((a, b) => {
+                        const an =
+                          `${a.first_name} ${a.last_name}`.toLowerCase();
+                        const bn =
+                          `${b.first_name} ${b.last_name}`.toLowerCase();
+                        const am = an.includes(q) ? 0 : 1;
+                        const bm = bn.includes(q) ? 0 : 1;
+                        return am - bm || an.localeCompare(bn);
+                      })
+                    );
                   }}
                   sx={{ mb: 2 }}
                 />
@@ -341,7 +497,7 @@ const MealPlansPage: React.FC = () => {
                   variant="contained"
                   startIcon={<AddIcon />}
                   disabled={!selectedPatientId}
-                  onClick={() => setCreatorOpen(true)}
+                  onClick={openCreate}
                 >
                   New meal plan
                 </Button>
@@ -354,13 +510,36 @@ const MealPlansPage: React.FC = () => {
                       <Grid item xs={12} md={6} key={mp.id}>
                         <Card variant="outlined">
                           <CardContent>
-                            <Typography
-                              variant="h6"
-                              component="h3"
-                              fontWeight={700}
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              justifyContent="space-between"
                             >
-                              {mp.title}
-                            </Typography>
+                              <Typography
+                                variant="h6"
+                                component="h3"
+                                fontWeight={700}
+                              >
+                                {mp.title}
+                              </Typography>
+                              <Stack direction="row" spacing={1}>
+                                <IconButton
+                                  aria-label="edit"
+                                  size="small"
+                                  onClick={() => openEdit(mp)}
+                                >
+                                  <EditOutlinedIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  aria-label="delete"
+                                  size="small"
+                                  onClick={() => handleDelete(mp.id)}
+                                >
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+                            </Stack>
+
                             <Typography
                               variant="caption"
                               color="text.secondary"
@@ -421,13 +600,18 @@ const MealPlansPage: React.FC = () => {
 
           <Dialog
             open={creatorOpen}
-            onClose={() => setCreatorOpen(false)}
+            onClose={() => {
+              setCreatorOpen(false);
+              setEditingPlan(null);
+            }}
             maxWidth="lg"
             fullWidth
           >
-            <DialogTitle>Create meal plan</DialogTitle>
+            <DialogTitle>
+              {editingPlan ? "Edit meal plan" : "Create meal plan"}
+            </DialogTitle>
             <DialogContent dividers>
-              <Stack spacing={3}>
+              <Stack spacing={2} sx={{ mb: 2 }}>
                 <TextField
                   label="Title"
                   value={planTitle}
@@ -442,52 +626,22 @@ const MealPlansPage: React.FC = () => {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-                <MealPlanBuilder
-                  initialRows={5}
-                  ownerId={meDietitian?.id}
-                  onCancel={() => setCreatorOpen(false)}
-                  onSave={async (rows: Array<{ items: MealPlanItem[] }>) => {
-                    if (!selectedPatientId || !meDietitian) return;
-                    if (!planTitle.trim()) {
-                      setToast({ type: "error", msg: "Title is required." });
-                      return;
-                    }
-                    const items: MealPlanItem[] = rows.flatMap((r) =>
-                      r.items.map((i) => ({ ...i }))
-                    );
-                    if (!items.length) {
-                      setToast({
-                        type: "error",
-                        msg: "Add at least one item.",
-                      });
-                      return;
-                    }
-                    const created = await createMealPlan({
-                      patient: selectedPatientId,
-                      dietician: meDietitian.id,
-                      title: planTitle.trim(),
-                      items,
-                      note: note.trim() || undefined,
-                    });
-                    if (created) {
-                      setPlans((prev) => [created, ...prev]);
-                      setToast({ type: "success", msg: "Meal plan saved." });
-                      setCreatorOpen(false);
-                      setPlanTitle("");
-                      setNote("");
-                    } else {
-                      setToast({
-                        type: "error",
-                        msg: "Failed to save meal plan.",
-                      });
-                    }
-                  }}
-                />
               </Stack>
+
+              <MealPlanBuilder
+                ownerId={meDietitian?.id}
+                initialRows={5}
+                initialData={builderRows.length ? builderRows : undefined}
+                onSave={async (rows: PlannerRow[]) => {
+                  setBuilderRows(rows as BuilderRow[]);
+                  await handleSaveFromBuilder(rows as BuilderRow[]);
+                }}
+                onCancel={() => {
+                  setCreatorOpen(false);
+                  setEditingPlan(null);
+                }}
+              />
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setCreatorOpen(false)}>Close</Button>
-            </DialogActions>
           </Dialog>
         </>
       ) : (
