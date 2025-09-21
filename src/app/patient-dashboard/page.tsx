@@ -155,6 +155,39 @@ const DashTile: React.FC<DashTileProps> = ({
     </Card>
   </Grid>
 );
+const ClickableSummaryTile: React.FC<{
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}> = ({ href, icon, label, value }) => (
+  <Card variant="outlined">
+    <Link href={href} passHref legacyBehavior>
+      <CardActionArea>
+        <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: 1,
+              bgcolor: "grey.100",
+            }}
+          >
+            {icon}
+          </Box>
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              {label}
+            </Typography>
+            <Typography fontWeight={700}>{value}</Typography>
+          </Box>
+        </CardContent>
+      </CardActionArea>
+    </Link>
+  </Card>
+);
 
 /* ---------- page ---------- */
 const PatientDashboard: React.FC = () => {
@@ -168,6 +201,8 @@ const PatientDashboard: React.FC = () => {
     type: "success" | "error";
     msg: string;
   } | null>(null);
+
+  const [mealPlanCount, setMealPlanCount] = useState<number>(0);
 
   const api =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -195,6 +230,24 @@ const PatientDashboard: React.FC = () => {
           meal_plans: res.data.meal_plans ?? [],
         };
         setData(payload);
+
+        try {
+          const mpRes = await axios.get(`${api}mealplan/get/`, {
+            headers: authHeaders(),
+          });
+          const list = Array.isArray(mpRes.data)
+            ? mpRes.data
+            : Array.isArray(mpRes.data?.results)
+            ? mpRes.data.results
+            : [];
+          setMealPlanCount(list.length);
+        } catch {
+          // fallback to whatever patient/me gave us
+          const fallback = Array.isArray(payload.meal_plans)
+            ? payload.meal_plans.length
+            : Number(payload.meal_plans ?? 0);
+          setMealPlanCount(fallback);
+        }
 
         const dField = payload.patient?.dietician ?? null;
         const normalized = normalizeDietitian(dField);
@@ -240,10 +293,6 @@ const PatientDashboard: React.FC = () => {
     )[0];
     return dayjs(soonest.date_time).format("D MMM YYYY, h:mm A");
   }, [appointments]);
-
-  const mealPlanCount = Array.isArray(data?.meal_plans)
-    ? data!.meal_plans!.length
-    : Number(data?.meal_plans ?? 0);
 
   const myDietitianHref =
     typeof data?.patient.dietician === "number"
@@ -342,6 +391,7 @@ const PatientDashboard: React.FC = () => {
         </Button>
       </Stack>
 
+      {/* KPI row */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={4}>
           <SummaryTile
@@ -351,7 +401,9 @@ const PatientDashboard: React.FC = () => {
           />
         </Grid>
         <Grid item xs={12} sm={4}>
-          <SummaryTile
+          {/* Clickable meal plans KPI with real count */}
+          <ClickableSummaryTile
+            href="/meal-plans"
             icon={<RestaurantMenuIcon fontSize="large" />}
             label="Meal plans"
             value={`${mealPlanCount} in your library`}
@@ -366,6 +418,7 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Left tiles + Right summary */}
       <Grid container spacing={2} mb={4}>
         <Grid item xs={12} md={6}>
           <Grid container spacing={2}>
@@ -407,6 +460,7 @@ const PatientDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Dietitian card */}
       <Box mt={2} mb={3}>
         <Typography variant="h5" component="h2" gutterBottom>
           Your dietitian
@@ -424,6 +478,7 @@ const PatientDashboard: React.FC = () => {
         )}
       </Box>
 
+      {/* Appointments */}
       {!!appointments.length && (
         <Box mt={1} mb={3}>
           <Typography variant="h5" component="h2" gutterBottom>
@@ -485,7 +540,9 @@ const PatientDashboard: React.FC = () => {
             await axios.post(`${api}patient/preferences/`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             });
-          } catch {}
+          } catch {
+            /* swallow */
+          }
         }}
       />
 
