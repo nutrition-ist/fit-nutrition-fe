@@ -699,7 +699,7 @@ const MealPlansPage: React.FC = () => {
                                   {grp.entries.map((e, j) => (
                                     <React.Fragment key={`e-${j}`}>
                                       {e.recipe_id ? (
-                                        <Link href={`/recipes/${e.recipe_id}`}>
+                                        <Link href={`/recipes?r=${e.recipe_id}`}>
                                           {e.label}
                                         </Link>
                                       ) : (
