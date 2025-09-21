@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import axios from "axios";
 import {
   Alert,
@@ -223,6 +224,27 @@ const rowsToItems = (rows: BuilderRow[]): MealPlanItem[] =>
       recipe_id: it.recipe_id,
     }))
   );
+
+const groupItemsByTime = (items: MealPlanItem[]) => {
+  const buckets = new Map<
+    string,
+    { time: string; entries: { label: string; recipe_id?: number }[] }
+  >();
+  for (const it of items) {
+    const m = it.label.match(/^(\d{2}:\d{2})\s+(.*)$/);
+    const time = m ? m[1] : "";
+    const label = m ? m[2] : it.label;
+    const key = time || "_";
+    if (!buckets.has(key)) buckets.set(key, { time, entries: [] });
+    buckets.get(key)!.entries.push({ label, recipe_id: it.recipe_id });
+  }
+  return Array.from(buckets.values()).sort((a, b) => {
+    if (!a.time && !b.time) return 0;
+    if (!a.time) return 1;
+    if (!b.time) return -1;
+    return a.time.localeCompare(b.time);
+  });
+};
 
 const MealPlansPage: React.FC = () => {
   const [role, setRole] = useState<Role | null>(null);
@@ -668,12 +690,25 @@ const MealPlansPage: React.FC = () => {
                         Items
                       </Typography>
                       <List dense>
-                        {mp.items.map((it, i) => (
-                          <ListItem key={`${it.label}-${i}`}>
+                        {groupItemsByTime(mp.items).map((grp, idx) => (
+                          <ListItem key={`grp-${idx}`} alignItems="flex-start">
                             <ListItemText
-                              primary={it.label}
+                              primary={grp.time || "—"}
                               secondary={
-                                it.recipe_id ? `#${it.recipe_id}` : undefined
+                                <span>
+                                  {grp.entries.map((e, j) => (
+                                    <React.Fragment key={`e-${j}`}>
+                                      {e.recipe_id ? (
+                                        <Link href={`/recipes/${e.recipe_id}`}>
+                                          {e.label}
+                                        </Link>
+                                      ) : (
+                                        e.label
+                                      )}
+                                      {j < grp.entries.length - 1 ? ", " : ""}
+                                    </React.Fragment>
+                                  ))}
+                                </span>
                               }
                             />
                           </ListItem>
