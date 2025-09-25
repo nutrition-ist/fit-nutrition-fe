@@ -1,26 +1,23 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  Divider,
   Grid,
-  List,
-  ListItem,
-  ListItemText,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import type { UnitSystem } from "@/app/measurements/page";
 
 type NumOrEmpty = number | "";
 
 export interface MeasurementsEntry {
-  date: string; 
+  date: string;
   heightCm?: number;
   weightKg?: number;
   armCm?: number;
@@ -33,12 +30,17 @@ export interface MeasurementsEntry {
 
 export interface MyMeasurementsProps {
   onSaved?: (entry: MeasurementsEntry) => void;
+  unitSystem?: UnitSystem;
 }
 
 const STORAGE_KEY = "measure_history_v1";
 const HEIGHT_KEY = "bmi_height_cm";
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
+
+const kgToLb = (kg: number) => kg * 2.2046226218;
+const lbToKg = (lb: number) => lb / 2.2046226218;
+const cmToIn = (cm: number) => cm / 2.54;
+const inToCm = (inch: number) => inch * 2.54;
 
 const calcBmi = (hCm?: number, wKg?: number): number | null => {
   if (!hCm || !wKg) return null;
@@ -61,45 +63,105 @@ const loadHistory = (): MeasurementsEntry[] => {
 const saveHistory = (list: MeasurementsEntry[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-  }
+  } catch {}
 };
 
-const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
-  const [heightCm, setHeightCm] = useState<NumOrEmpty>("");
-  const [weightKg, setWeightKg] = useState<NumOrEmpty>("");
-  const [armCm, setArmCm] = useState<NumOrEmpty>("");
-  const [waistCm, setWaistCm] = useState<NumOrEmpty>("");
-  const [chestCm, setChestCm] = useState<NumOrEmpty>("");
-  const [thighCm, setThighCm] = useState<NumOrEmpty>("");
-  const [hipsCm, setHipsCm] = useState<NumOrEmpty>("");
+const MyMeasurements: React.FC<MyMeasurementsProps> = ({
+  onSaved,
+  unitSystem = "metric",
+}) => {
+  const [height, setHeight] = useState<NumOrEmpty>("");
+  const [weight, setWeight] = useState<NumOrEmpty>("");
+  const [arm, setArm] = useState<NumOrEmpty>("");
+  const [waist, setWaist] = useState<NumOrEmpty>("");
+  const [chest, setChest] = useState<NumOrEmpty>("");
+  const [thigh, setThigh] = useState<NumOrEmpty>("");
+  const [hips, setHips] = useState<NumOrEmpty>("");
 
   const [history, setHistory] = useState<MeasurementsEntry[]>([]);
+  const latest = history[0];
+  const prevUnitRef = useRef<UnitSystem>(unitSystem);
 
   useEffect(() => {
     const h = localStorage.getItem(HEIGHT_KEY);
-    if (h) setHeightCm(Number(h));
+    if (h) setHeight(Number(h));
     setHistory(loadHistory());
   }, []);
 
-  const latest = history[0];
+  useEffect(() => {
+    if (typeof height !== "number") {
+      prevUnitRef.current = unitSystem;
+      return;
+    }
+    if (prevUnitRef.current !== unitSystem) {
+      setHeight(unitSystem === "imperial" ? cmToIn(height) : inToCm(height));
+      prevUnitRef.current = unitSystem;
+    }
+  }, [unitSystem, height]);
 
-  const bmi = useMemo(() => {
-    const h = typeof heightCm === "number" ? heightCm : latest?.heightCm;
-    const w = typeof weightKg === "number" ? weightKg : latest?.weightKg;
-    return calcBmi(h, w);
-  }, [heightCm, weightKg, latest?.heightCm, latest?.weightKg]);
+  const latestHeightCm =
+    typeof height === "number"
+      ? unitSystem === "metric"
+        ? height
+        : inToCm(height)
+      : latest?.heightCm;
+  const latestWeightKg =
+    typeof weight === "number"
+      ? unitSystem === "metric"
+        ? weight
+        : lbToKg(weight)
+      : latest?.weightKg;
+
+  const bmi = useMemo(
+    () => calcBmi(latestHeightCm, latestWeightKg),
+    [latestHeightCm, latestWeightKg]
+  );
 
   const handleSave = () => {
     const entry: MeasurementsEntry = {
       date: new Date().toISOString(),
-      heightCm: typeof heightCm === "number" ? heightCm : latest?.heightCm,
-      weightKg: typeof weightKg === "number" ? weightKg : undefined,
-      armCm: typeof armCm === "number" ? armCm : undefined,
-      waistCm: typeof waistCm === "number" ? waistCm : undefined,
-      chestCm: typeof chestCm === "number" ? chestCm : undefined,
-      thighCm: typeof thighCm === "number" ? thighCm : undefined,
-      hipsCm: typeof hipsCm === "number" ? hipsCm : undefined,
+      heightCm:
+        typeof height === "number"
+          ? unitSystem === "metric"
+            ? height
+            : inToCm(height)
+          : latest?.heightCm,
+      weightKg:
+        typeof weight === "number"
+          ? unitSystem === "metric"
+            ? weight
+            : lbToKg(weight)
+          : undefined,
+      armCm:
+        typeof arm === "number"
+          ? unitSystem === "metric"
+            ? arm
+            : inToCm(arm)
+          : undefined,
+      waistCm:
+        typeof waist === "number"
+          ? unitSystem === "metric"
+            ? waist
+            : inToCm(waist)
+          : undefined,
+      chestCm:
+        typeof chest === "number"
+          ? unitSystem === "metric"
+            ? chest
+            : inToCm(chest)
+          : undefined,
+      thighCm:
+        typeof thigh === "number"
+          ? unitSystem === "metric"
+            ? thigh
+            : inToCm(thigh)
+          : undefined,
+      hipsCm:
+        typeof hips === "number"
+          ? unitSystem === "metric"
+            ? hips
+            : inToCm(hips)
+          : undefined,
     };
     if (entry.heightCm)
       localStorage.setItem(HEIGHT_KEY, String(entry.heightCm));
@@ -108,57 +170,44 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
       entry.weightKg ?? latest?.weightKg
     );
     if (computedBmi !== null) entry.bmi = computedBmi;
-
     const next = [entry, ...history].slice(0, 50);
     setHistory(next);
     saveHistory(next);
     onSaved?.(entry);
-
-    setWeightKg("");
-    setArmCm("");
-    setWaistCm("");
-    setChestCm("");
-    setThighCm("");
-    setHipsCm("");
+    setWeight("");
+    setArm("");
+    setWaist("");
+    setChest("");
+    setThigh("");
+    setHips("");
   };
 
-  const delta = (field: keyof MeasurementsEntry) => {
-    if (history.length < 2) return null;
-    const a = history[0]?.[field];
-    const b = history[1]?.[field];
-    if (typeof a !== "number" || typeof b !== "number") return null;
-    return round1(a - b);
+  const fmt = (n: number | undefined, w: boolean) => {
+    if (typeof n !== "number") return "–";
+    if (w)
+      return unitSystem === "metric"
+        ? `${round1(n)} kg`
+        : `${round1(kgToLb(n))} lb`;
+    return unitSystem === "metric"
+      ? `${round1(n)} cm`
+      : `${round1(cmToIn(n))} in`;
   };
 
-  const DeltaChip: React.FC<{ field: keyof MeasurementsEntry }> = ({
-    field,
-  }) => {
-    const d = delta(field);
-    if (d === null) return null;
-
-    const goodIfDown = field !== "armCm" && field !== "chestCm";
-    const color: "default" | "success" | "warning" =
-      d === 0
-        ? "default"
-        : d < 0
-        ? goodIfDown
-          ? "success"
-          : "warning"
-        : goodIfDown
-        ? "warning"
-        : "success";
-
-    const sign = d > 0 ? "+" : d < 0 ? "–" : "±";
-    return (
-      <Chip size="small" color={color} label={`${sign}${Math.abs(d)} cm`} />
-    );
+  const label = {
+    height: unitSystem === "metric" ? "Height (cm)" : "Height (in)",
+    weight: unitSystem === "metric" ? "Weight (kg)" : "Weight (lb)",
+    arm: unitSystem === "metric" ? "Arm (cm)" : "Arm (in)",
+    waist: unitSystem === "metric" ? "Waist (cm)" : "Waist (in)",
+    chest: unitSystem === "metric" ? "Chest (cm)" : "Chest (in)",
+    thigh: unitSystem === "metric" ? "Thigh (cm)" : "Thigh (in)",
+    hips: unitSystem === "metric" ? "Hips (cm)" : "Hips (in)",
   };
 
   return (
     <Card variant="outlined">
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          My Measurements
+          Add Your Measurements
         </Typography>
 
         <Grid container spacing={2}>
@@ -167,11 +216,11 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <TextField
-                    label="Height (cm)"
+                    label={label.height}
                     type="number"
-                    value={heightCm}
+                    value={height}
                     onChange={(e) =>
-                      setHeightCm(
+                      setHeight(
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
@@ -181,88 +230,88 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
-                    label="Weight (kg)"
+                    label={label.weight}
                     type="number"
-                    value={weightKg}
+                    value={weight}
                     onChange={(e) =>
-                      setWeightKg(
+                      setWeight(
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
-                    inputProps={{ min: 20, max: 300, step: 0.1 }}
+                    inputProps={{ min: 20, max: 660, step: 0.1 }}
                     fullWidth
                   />
                 </Grid>
 
                 <Grid item xs={6}>
                   <TextField
-                    label="Arm (cm)"
+                    label={label.arm}
                     type="number"
-                    value={armCm}
+                    value={arm}
                     onChange={(e) =>
-                      setArmCm(
+                      setArm(
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
-                    inputProps={{ min: 5, max: 80, step: 0.1 }}
+                    inputProps={{ min: 2, max: 80, step: 0.1 }}
                     fullWidth
                   />
                 </Grid>
                 <Grid item xs={6}>
                   <TextField
-                    label="Waist (cm)"
+                    label={label.waist}
                     type="number"
-                    value={waistCm}
+                    value={waist}
                     onChange={(e) =>
-                      setWaistCm(
+                      setWaist(
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
-                    inputProps={{ min: 30, max: 200, step: 0.1 }}
-                    fullWidth
-                  />
-                </Grid>
-
-                <Grid item xs={6}>
-                  <TextField
-                    label="Chest (cm)"
-                    type="number"
-                    value={chestCm}
-                    onChange={(e) =>
-                      setChestCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
-                    inputProps={{ min: 30, max: 200, step: 0.1 }}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Thigh (cm)"
-                    type="number"
-                    value={thighCm}
-                    onChange={(e) =>
-                      setThighCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
-                    inputProps={{ min: 20, max: 120, step: 0.1 }}
+                    inputProps={{ min: 10, max: 200, step: 0.1 }}
                     fullWidth
                   />
                 </Grid>
 
                 <Grid item xs={6}>
                   <TextField
-                    label="Hips (cm)"
+                    label={label.chest}
                     type="number"
-                    value={hipsCm}
+                    value={chest}
                     onChange={(e) =>
-                      setHipsCm(
+                      setChest(
                         e.target.value === "" ? "" : Number(e.target.value)
                       )
                     }
-                    inputProps={{ min: 30, max: 200, step: 0.1 }}
+                    inputProps={{ min: 10, max: 200, step: 0.1 }}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label={label.thigh}
+                    type="number"
+                    value={thigh}
+                    onChange={(e) =>
+                      setThigh(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                    inputProps={{ min: 10, max: 140, step: 0.1 }}
+                    fullWidth
+                  />
+                </Grid>
+
+                <Grid item xs={6}>
+                  <TextField
+                    label={label.hips}
+                    type="number"
+                    value={hips}
+                    onChange={(e) =>
+                      setHips(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                    inputProps={{ min: 10, max: 200, step: 0.1 }}
                     fullWidth
                   />
                 </Grid>
@@ -289,89 +338,32 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
               <Stack spacing={1} mt={1}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Weight</Typography>
-                  <Chip
-                    label={latest?.weightKg ? `${latest.weightKg} kg` : "—"}
-                    size="small"
-                  />
-                  <DeltaChip field="weightKg" />
+                  <Chip label={fmt(latest?.weightKg, true)} size="small" />
                 </Stack>
-
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>BMI</Typography>
-                  <Chip
-                    label={latest?.bmi ? latest.bmi : bmi ?? "—"}
-                    size="small"
-                  />
+                  <Chip label={latest?.bmi ?? "–"} size="small" />
                 </Stack>
-
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Arm</Typography>
-                  <Chip label={latest?.armCm ?? "—"} size="small" />
-                  <DeltaChip field="armCm" />
+                  <Chip label={fmt(latest?.armCm, false)} size="small" />
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Waist</Typography>
-                  <Chip label={latest?.waistCm ?? "—"} size="small" />
-                  <DeltaChip field="waistCm" />
+                  <Chip label={fmt(latest?.waistCm, false)} size="small" />
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Chest</Typography>
-                  <Chip label={latest?.chestCm ?? "—"} size="small" />
-                  <DeltaChip field="chestCm" />
+                  <Chip label={fmt(latest?.chestCm, false)} size="small" />
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Thigh</Typography>
-                  <Chip label={latest?.thighCm ?? "—"} size="small" />
-                  <DeltaChip field="thighCm" />
+                  <Chip label={fmt(latest?.thighCm, false)} size="small" />
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Hips</Typography>
-                  <Chip label={latest?.hipsCm ?? "—"} size="small" />
-                  <DeltaChip field="hipsCm" />
+                  <Chip label={fmt(latest?.hipsCm, false)} size="small" />
                 </Stack>
-
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  {latest?.date
-                    ? `Last saved: ${new Date(latest.date).toLocaleString()}`
-                    : "No entries yet"}
-                </Typography>
-
-                <Divider sx={{ my: 1.5 }} />
-
-                <Typography variant="subtitle2" color="text.secondary">
-                  History (last 5)
-                </Typography>
-                <List dense>
-                  {history.slice(0, 5).map((e) => (
-                    <ListItem key={e.date} disableGutters>
-                      <ListItemText
-                        primaryTypographyProps={{ variant: "body2" }}
-                        secondaryTypographyProps={{ variant: "caption" }}
-                        primary={`${new Date(e.date).toLocaleDateString()} • ${
-                          e.weightKg ? `${e.weightKg} kg` : "—"
-                        }${e.bmi ? ` • BMI ${e.bmi}` : ""}`}
-                        secondary={[
-                          e.waistCm ? `Waist ${e.waistCm} cm` : null,
-                          e.hipsCm ? `Hips ${e.hipsCm} cm` : null,
-                          e.chestCm ? `Chest ${e.chestCm} cm` : null,
-                          e.armCm ? `Arm ${e.armCm} cm` : null,
-                          e.thighCm ? `Thigh ${e.thighCm} cm` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      />
-                    </ListItem>
-                  ))}
-                  {history.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                      No measurements saved yet.
-                    </Typography>
-                  )}
-                </List>
               </Stack>
             </Box>
           </Grid>

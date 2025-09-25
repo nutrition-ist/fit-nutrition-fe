@@ -19,8 +19,8 @@ type MetricKey =
   | "thighCm"
   | "hipsCm";
 
-type MeasurementEntry = {
-  date?: string; 
+type Row = {
+  date?: string;
   weightKg?: number;
   bmi?: number;
   armCm?: number;
@@ -31,48 +31,55 @@ type MeasurementEntry = {
 };
 
 export interface MeasurementsChartProps {
-  entries?: MeasurementEntry[];
+  entries?: Row[];
   yKey?: MetricKey;
   height?: number;
 }
 
-/* Labels & units */
 const LABELS: Record<MetricKey, string> = {
-  weightKg: "Weight (kg)",
+  weightKg: "Weight",
   bmi: "BMI",
-  armCm: "Arm (cm)",
-  waistCm: "Waist (cm)",
-  chestCm: "Chest (cm)",
-  thighCm: "Thigh (cm)",
-  hipsCm: "Hips (cm)",
-};
-const UNITS: Record<MetricKey, string> = {
-  weightKg: "kg",
-  bmi: "",
-  armCm: "cm",
-  waistCm: "cm",
-  chestCm: "cm",
-  thighCm: "cm",
-  hipsCm: "cm",
+  armCm: "Arm",
+  waistCm: "Waist",
+  chestCm: "Chest",
+  thighCm: "Thigh",
+  hipsCm: "Hips",
 };
 
-/* Helpers */
-function extractSeries(
-  entries: MeasurementEntry[] | undefined,
-  key: MetricKey
-): { x: number; y: number; date: Date }[] {
+function extract(entries: Row[] | undefined, key: MetricKey) {
   const list = Array.isArray(entries) ? entries : [];
   return list
     .map((e) => {
       const d = e?.date ? new Date(e.date) : null;
       const v = e?.[key];
       if (!d || Number.isNaN(d.getTime()) || typeof v !== "number") return null;
-      return { x: 0, y: v, date: d };
+      return { y: v, date: d };
     })
-    .filter((p): p is { x: number; y: number; date: Date } => p !== null);
+    .filter((p): p is { y: number; date: Date } => p !== null)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-/* Component */
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const YRANGE: Partial<Record<MetricKey, [number, number]>> = {
+  bmi: [0, 50],
+};
+
+const DEFAULT_RANGE: [number, number] = [20, 120];
+
 const MeasurementsChart: React.FC<MeasurementsChartProps> = ({
   entries,
   yKey = "weightKg",
@@ -92,50 +99,39 @@ const MeasurementsChart: React.FC<MeasurementsChartProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  const series = useMemo(
-    () => extractSeries(entries, metric),
-    [entries, metric]
-  );
+  const series = useMemo(() => extract(entries, metric), [entries, metric]);
 
-  const xMin = useMemo(
-    () =>
-      series.length ? Math.min(...series.map((p) => p.date.getTime())) : 0,
-    [series]
-  );
-  const xMax = useMemo(
-    () =>
-      series.length ? Math.max(...series.map((p) => p.date.getTime())) : 1,
-    [series]
-  );
-  const yMin = useMemo(
-    () => (series.length ? Math.min(...series.map((p) => p.y)) : 0),
-    [series]
-  );
-  const yMax = useMemo(
-    () => (series.length ? Math.max(...series.map((p) => p.y)) : 1),
-    [series]
-  );
+  const padL = 36;
+  const padB = 30;
+  const padT = 16;
+  const padR = 12;
+  const plotW = Math.max(1, width - padL - padR);
+  const plotH = Math.max(1, height - padT - padB);
 
-  const pad = 28;
-  const plotW = Math.max(1, width - pad * 2);
-  const plotH = Math.max(1, height - pad * 2);
+  const xScale = (d: Date) => {
+    const m = d.getMonth();
+    const day = d.getDate();
+    const days = new Date(d.getFullYear(), m + 1, 0).getDate();
+    const pos = m + (day - 1) / days;
+    return padL + (plotW * pos) / 11;
+  };
+
+  const [yMin, yMax] = YRANGE[metric] ?? DEFAULT_RANGE;
+  const yScale = (v: number) =>
+    padT + plotH - (plotH * (v - yMin)) / (yMax - yMin);
 
   const pathD = useMemo(() => {
     if (!series.length) return "";
-    const xScale = (t: number) =>
-      pad + (plotW * (t - xMin)) / (xMax - xMin || 1);
-    const yScale = (v: number) =>
-      pad + plotH - (plotH * (v - yMin)) / (yMax - yMin || 1);
-    const pts = series
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .map((p) => `${xScale(p.date.getTime())},${yScale(p.y)}`);
+    const pts = series.map(
+      (p) => `${xScale(p.date)},${yScale(Math.max(yMin, Math.min(yMax, p.y)))}`
+    );
     return `M${pts.join(" L")}`;
-  }, [series, plotW, plotH, xMin, xMax, yMin, yMax, pad]);
+  }, [series, plotW, plotH, yMin, yMax]);
 
-  const ticks = 4;
+  const tickStep = metric === "bmi" ? 5 : 10;
   const yTicks = Array.from(
-    { length: ticks + 1 },
-    (_, i) => yMin + ((yMax - yMin) * i) / ticks
+    { length: Math.floor((yMax - yMin) / tickStep) + 1 },
+    (_, i) => yMin + i * tickStep
   );
 
   return (
@@ -184,49 +180,71 @@ const MeasurementsChart: React.FC<MeasurementsChartProps> = ({
             role="img"
             aria-label="Measurements chart"
           >
-            {yTicks.map((t, idx) => {
-              const y = pad + plotH - (plotH * (t - yMin)) / (yMax - yMin || 1);
+            {yTicks.map((t) => {
+              const y = yScale(t);
               return (
-                <g key={idx}>
+                <g key={t}>
                   <line
-                    x1={pad}
-                    x2={pad + plotW}
+                    x1={padL}
+                    x2={padL + plotW}
                     y1={y}
                     y2={y}
                     stroke="#e5e7eb"
                     strokeDasharray="4 4"
                   />
-                  <text x={4} y={y + 3} fontSize={11} fill="#6b7280">
-                    {t.toFixed(0)} {UNITS[metric]}
+                  <text x={8} y={y + 3} fontSize={11} fill="#6b7280">
+                    {t}
+                  </text>
+                </g>
+              );
+            })}
+            {months.map((m, i) => {
+              const x = padL + (plotW * i) / 11;
+              return (
+                <g key={m}>
+                  <line
+                    x1={x}
+                    x2={x}
+                    y1={padT}
+                    y2={padT + plotH}
+                    stroke="#f1f5f9"
+                  />
+                  <text
+                    x={x}
+                    y={padT + plotH + 18}
+                    fontSize={11}
+                    fill="#6b7280"
+                    textAnchor="middle"
+                  >
+                    {m}
                   </text>
                 </g>
               );
             })}
             <line
-              x1={pad}
-              y1={pad}
-              x2={pad}
-              y2={pad + plotH}
+              x1={padL}
+              y1={padT}
+              x2={padL}
+              y2={padT + plotH}
               stroke="#9ca3af"
             />
             <line
-              x1={pad}
-              y1={pad + plotH}
-              x2={pad + plotW}
-              y2={pad + plotH}
+              x1={padL}
+              y1={padT + plotH}
+              x2={padL + plotW}
+              y2={padT + plotH}
               stroke="#9ca3af"
             />
             <path d={pathD} fill="none" stroke="#16a34a" strokeWidth={2} />
-            {series
-              .sort((a, b) => a.date.getTime() - b.date.getTime())
-              .map((p, i) => {
-                const x =
-                  pad +
-                  (plotW * (p.date.getTime() - xMin)) / (xMax - xMin || 1);
-                const y =
-                  pad + plotH - (plotH * (p.y - yMin)) / (yMax - yMin || 1);
-                return <circle key={i} cx={x} cy={y} r={3} fill="#16a34a" />;
-              })}
+            {series.map((p, i) => (
+              <circle
+                key={i}
+                cx={xScale(p.date)}
+                cy={yScale(Math.max(yMin, Math.min(yMax, p.y)))}
+                r={3}
+                fill="#16a34a"
+              />
+            ))}
           </svg>
         )}
       </Box>

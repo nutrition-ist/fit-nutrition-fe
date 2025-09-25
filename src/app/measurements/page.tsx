@@ -1,20 +1,25 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Box, Button, Grid, Stack, Typography, Divider } from "@mui/material";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Button,
+  Grid,
+  Stack,
+  Typography,
+  Divider,
+  ToggleButtonGroup,
+  ToggleButton,
+  Dialog,
+  DialogContent,
+} from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import RefreshIcon from "@mui/icons-material/Refresh";
-
+import Image from "next/image";
 import MeasurementsChart from "@/components/MeasurementsChart";
 import MyMeasurements from "@/components/MyMeasurements";
+import MeasurementHistory from "@/components/MeasurementHistory";
 
-const LOCAL_KEYS = [
-  "measure_history_v1",
-  "fn_measurements",
-  "fit_measurements",
-  "measurements_history",
-];
+export type UnitSystem = "metric" | "imperial";
 
 export type MeasurementEntry = {
   date: string;
@@ -27,37 +32,25 @@ export type MeasurementEntry = {
   hipsCm?: number;
 };
 
-
-type LegacySnake = {
-  timestamp?: string;
-  date?: string;
-  weight_kg?: number;
-  arm_cm?: number;
-  waist_cm?: number;
-  chest_cm?: number;
-  thigh_cm?: number;
-  hips_cm?: number;
-  bmi?: number;
-};
-
+const LOCAL_KEYS = [
+  "measure_history_v1",
+  "fn_measurements",
+  "fit_measurements",
+  "measurements_history",
+];
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null;
-
-
 const asNum = (v: unknown): number | undefined =>
   typeof v === "number" ? v : undefined;
 
-
 function fromUnknown(it: unknown): MeasurementEntry | null {
   if (!isRecord(it)) return null;
-  const o = it as Partial<MeasurementEntry> & LegacySnake;
-
+  const o = it as Partial<MeasurementEntry> & Record<string, unknown>;
   const date =
     (typeof o.date === "string" && o.date) ||
-    (typeof o.timestamp === "string" && o.timestamp) ||
+    (typeof o.timestamp === "string" && (o.timestamp as string)) ||
     new Date().toISOString();
-
   return {
     date,
     weightKg: asNum(o.weightKg ?? o.weight_kg),
@@ -70,15 +63,12 @@ function fromUnknown(it: unknown): MeasurementEntry | null {
   };
 }
 
-
 function readMeasurements(): MeasurementEntry[] {
   try {
     const raw =
       LOCAL_KEYS.map((k) => localStorage.getItem(k)).find(Boolean) ?? "[]";
-
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-
     return parsed
       .map(fromUnknown)
       .filter((x): x is MeasurementEntry => !!x)
@@ -90,15 +80,15 @@ function readMeasurements(): MeasurementEntry[] {
 
 const MeasurementsPage: React.FC = () => {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
-
-  const refresh = (): void => setEntries(readMeasurements());
+  const [units, setUnits] = useState<UnitSystem>("metric");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   useEffect(() => {
-    refresh();
-    const onFocus = () => refresh();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    setEntries(readMeasurements());
   }, []);
+
+  const latest = entries[entries.length - 1];
+  const currentBmi = useMemo(() => latest?.bmi ?? null, [latest?.bmi]);
 
   return (
     <Box px={{ xs: 2, md: 6 }} py={4}>
@@ -109,25 +99,17 @@ const MeasurementsPage: React.FC = () => {
         spacing={2}
         mb={2}
       >
-        <Typography variant="h4" fontWeight={700}>
-          My Measurements
+        <Typography variant="h3" component="h1" fontWeight={800}>
+          Measurements
         </Typography>
-
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <Button
-            component={Link}
             href="/patient-dashboard"
+            component="a"
             variant="outlined"
             startIcon={<ArrowBackIosNewIcon />}
           >
             Back to Dashboard
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={refresh}
-          >
-            Refresh
           </Button>
         </Stack>
       </Stack>
@@ -140,9 +122,61 @@ const MeasurementsPage: React.FC = () => {
         </Grid>
 
         <Grid item xs={12} md={5}>
-          <MyMeasurements />
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={1}
+          >
+            <ToggleButtonGroup
+              size="small"
+              color="primary"
+              exclusive
+              value={units}
+              onChange={(_, v) => v && setUnits(v as UnitSystem)}
+            >
+              <ToggleButton value="imperial">Imperial</ToggleButton>
+              <ToggleButton value="metric">Metric</ToggleButton>
+            </ToggleButtonGroup>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setTutorialOpen(true)}
+                sx={{ textTransform: "none" }}
+              >
+                How to take measurements
+              </Button>
+              <Typography variant="body2">
+                Current BMI: {typeof currentBmi === "number" ? currentBmi : "—"}
+              </Typography>
+            </Stack>
+          </Stack>
+          <MyMeasurements unitSystem={units} />
         </Grid>
       </Grid>
+
+      <Typography variant="h5" component="h2" sx={{ mt: 4, mb: 1 }}>
+        Measurement History
+      </Typography>
+      <MeasurementHistory />
+
+      <Dialog
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <Image
+            src="/images/measurements.png"
+            alt="Measurement tutorial"
+            width={1600}
+            height={1000}
+            style={{ width: "100%", height: "auto" }}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
