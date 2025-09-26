@@ -1,18 +1,17 @@
 "use client";
-
+//7 gun sonra sil bu component'ı, şimdi yapılanlar kötü olursa kafana sıkma sonra. 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Box,
   Button,
   Card,
   CardContent,
-  Chip,
   Grid,
   Stack,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
 import MeasurementsChart from "./MeasurementsChart";
+import MeasurementHistory from "./MeasurementHistory";
 
 type Entry = {
   timestamp: string;
@@ -62,67 +61,46 @@ const LOCAL_KEYS = [
   "fit_measurements",
   "measurements_history",
 ];
+
 const readLocalHistory = (): Entry[] => {
   try {
     const raw =
       LOCAL_KEYS.map((k) => localStorage.getItem(k)).find((v) => !!v) ?? "[]";
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-
+    const parsed = JSON.parse(raw) as unknown[];
     const toEntry = (e: unknown): Entry | null => {
-      if (typeof e !== "object" || e === null) return null;
-      const o = e as Record<string, unknown>;
+      if (!isObject(e)) return null;
       const ts =
-        (typeof o.timestamp === "string" && o.timestamp) ||
-        (typeof o.date === "string" && o.date);
+        (typeof e.timestamp === "string" && e.timestamp) ||
+        (typeof e.date === "string" && e.date);
       if (!ts) return null;
-
       const num = (v: unknown) => (typeof v === "number" ? v : undefined);
-
       return {
         timestamp: ts,
-        heightCm: num(o.heightCm),
-        weightKg: num(o.weightKg),
-        armCm: num(o.armCm),
-        waistCm: num(o.waistCm),
-        chestCm: num(o.chestCm),
-        thighCm: num(o.thighCm),
-        hipsCm: num(o.hipsCm),
-        bmi: num(o.bmi),
+        heightCm: num(e.heightCm),
+        weightKg: num(e.weightKg),
+        armCm: num(e.armCm),
+        waistCm: num(e.waistCm),
+        chestCm: num(e.chestCm),
+        thighCm: num(e.thighCm),
+        hipsCm: num(e.hipsCm),
+        bmi: num(e.bmi),
       };
     };
-
-    return parsed
-      .map(toEntry)
-      .filter((x): x is Entry => !!x)
-      .sort((a, b) => +new Date(a.timestamp) - +new Date(b.timestamp));
+    return Array.isArray(parsed)
+      ? parsed
+          .map(toEntry)
+          .filter((x): x is Entry => !!x)
+          .sort((a, b) => +new Date(a.timestamp) - +new Date(b.timestamp))
+      : [];
   } catch {
     return [];
   }
-};
-
-const latestOf = (hist: Entry[]): Entry | null =>
-  hist.length
-    ? hist
-        .slice()
-        .sort((a, b) => +new Date(b.timestamp) - +new Date(a.timestamp))[0]
-    : null;
-
-const bmiOf = (e: Entry | null): number | null => {
-  if (!e) return null;
-  if (typeof e.bmi === "number") return e.bmi;
-  const h = e.heightCm ?? 0;
-  const w = e.weightKg ?? 0;
-  if (!h || !w) return null;
-  const m = h / 100;
-  return Math.round((w / (m * m)) * 10) / 10;
 };
 
 const MeasurementSummaryCard: React.FC<MeasurementSummaryCardProps> = ({
   hideButton,
 }) => {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     (async () => {
@@ -134,7 +112,7 @@ const MeasurementSummaryCard: React.FC<MeasurementSummaryCardProps> = ({
               headers: { Authorization: `Bearer ${token}` },
             });
             if (resp.ok) {
-              const data = (await resp.json()) as unknown;
+              const data = (await resp.json()) as unknown[];
               if (Array.isArray(data)) {
                 const mapped = data.filter(isApiMeasurement).map((d) => ({
                   timestamp:
@@ -154,34 +132,45 @@ const MeasurementSummaryCard: React.FC<MeasurementSummaryCardProps> = ({
                   bmi: typeof d.bmi === "number" ? d.bmi : undefined,
                 })) as Entry[];
                 setEntries(mapped);
-                setLoading(false);
                 return;
               }
             }
           } catch {}
         }
         setEntries(readLocalHistory());
-      } finally {
-        setLoading(false);
+      } catch {
+        setEntries(readLocalHistory());
       }
     })();
   }, []);
-
-  const latest = useMemo(() => latestOf(entries), [entries]);
 
   const weightEntries = useMemo(
     () => entries.map((e) => ({ date: e.timestamp, weightKg: e.weightKg })),
     [entries]
   );
 
-  const bmi = useMemo(() => bmiOf(latest), [latest]);
-
   return (
     <Card variant="outlined">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          My Measurements
-        </Typography>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={1}
+        >
+          <Typography variant="h6">Your Measurements</Typography>
+          {!hideButton && (
+            <Link href="/measurements">
+              <Button
+                variant="contained"
+                size="small"
+                sx={{ textTransform: "none" }}
+              >
+                Add Measurements
+              </Button>
+            </Link>
+          )}
+        </Stack>
 
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
@@ -193,68 +182,19 @@ const MeasurementSummaryCard: React.FC<MeasurementSummaryCardProps> = ({
           </Grid>
 
           <Grid item xs={12} md={6}>
-            {loading ? (
-              <Typography variant="body2" color="text.secondary">
-                Loading…
-              </Typography>
-            ) : latest ? (
-              <Stack spacing={1}>
-                <Row label="Weight" value={latest.weightKg} unit="kg" />
-                <Row label="BMI" value={bmi} />
-                <Row label="Arm" value={latest.armCm} unit="cm" />
-                <Row label="Waist" value={latest.waistCm} unit="cm" />
-                <Row label="Chest" value={latest.chestCm} unit="cm" />
-                <Row label="Thigh" value={latest.thighCm} unit="cm" />
-                <Row label="Hips" value={latest.hipsCm} unit="cm" />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  Last saved: {new Date(latest.timestamp).toLocaleString()}
-                </Typography>
-              </Stack>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No measurements saved yet.
-              </Typography>
-            )}
-
-            {!hideButton && (
-              <Box sx={{ mt: 2 }}>
-                <Link href="/measurements">
-                  <Button variant="contained" fullWidth>
-                    Open my measurements
-                  </Button>
-                </Link>
-              </Box>
-            )}
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+              sx={{ mb: 1 }}
+            >
+              Last Measurements
+            </Typography>
+            <MeasurementHistory maxItems={2} minCardWidth={200} bold />
           </Grid>
         </Grid>
       </CardContent>
     </Card>
   );
 };
-
-const Row: React.FC<{
-  label: string;
-  value: number | null | undefined;
-  unit?: string;
-}> = ({ label, value, unit = "" }) => (
-  <Stack direction="row" spacing={1} alignItems="center">
-    <Box sx={{ width: 72 }}>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Box>
-    <Chip
-      size="small"
-      label={typeof value === "number" ? `${value}${unit}` : "–"}
-      color="success"
-      variant="outlined"
-      sx={{ fontWeight: 600 }}
-    />
-  </Stack>
-);
 
 export default MeasurementSummaryCard;

@@ -20,14 +20,7 @@ import {
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import StraightenIcon from "@mui/icons-material/Straighten";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-
-import MeasurementSummaryCard from "@/components/MeasurementSummaryCard";
-import SummaryTile from "@/components/SummaryTile";
 import RecipeList from "@/components/RecipeList";
 import PatientSettingsDialog, {
   PatientPrefsPayload,
@@ -39,8 +32,18 @@ import AppointmentCard from "@/components/AppointmentCard";
 import AppointmentsCalendar, {
   Appointment as CalAppointment,
 } from "@/components/AppointmentsCalendar";
+import MeasurementsChart from "@/components/MeasurementsChart";
+import MeasurementHistory from "@/components/MeasurementHistory";
 
-/* ---------- types ---------- */
+/* types */
+type DietitianWire = Partial<DietitianType> & { id?: number };
+type DietitianInput =
+  | number
+  | DietitianWire
+  | { dietician?: number | DietitianWire }
+  | null
+  | undefined;
+
 interface Patient {
   id: number;
   username: string;
@@ -65,15 +68,7 @@ interface PatientDashboardData {
   meal_plans?: { id: number; title: string }[] | number;
 }
 
-/* ---------- helpers ---------- */
-type DietitianWire = Partial<DietitianType> & { id?: number };
-type DietitianInput =
-  | number
-  | DietitianWire
-  | { dietician?: number | DietitianWire }
-  | null
-  | undefined;
-
+/* helpers */
 const normalizeDietitian = (raw: DietitianInput): DietitianType | null => {
   if (raw == null) return null;
   const source: number | DietitianWire =
@@ -111,107 +106,114 @@ const normalizeDietitian = (raw: DietitianInput): DietitianType | null => {
   };
 };
 
-type DashTileProps = {
-  href: string;
+const LOCAL_KEYS = [
+  "measure_history_v1",
+  "fn_measurements",
+  "fit_measurements",
+  "measurements_history",
+];
+
+const readLocalHistory = (): { timestamp: string; weightKg?: number }[] => {
+  try {
+    const raw =
+      LOCAL_KEYS.map((k) => localStorage.getItem(k)).find(Boolean) ?? "[]";
+    const parsed = JSON.parse(raw) as unknown[];
+    const mapOne = (e: unknown) => {
+      if (typeof e !== "object" || e === null) return null;
+      const o = e as Record<string, unknown>;
+      const ts =
+        (typeof o.timestamp === "string" && o.timestamp) ||
+        (typeof o.date === "string" && o.date);
+      if (!ts) return null;
+      const w = typeof o.weightKg === "number" ? o.weightKg : undefined;
+      return { timestamp: ts, weightKg: w };
+    };
+    return Array.isArray(parsed)
+      ? (parsed.map(mapOne).filter(Boolean) as {
+          timestamp: string;
+          weightKg?: number;
+        }[])
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+/* tile */
+const DashTile: React.FC<{
+  href?: string;
+  onClick?: () => void;
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   fullWidth?: boolean;
+}> = ({ href, onClick, icon, title, subtitle, fullWidth }) => {
+  const content = (
+    <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: 1,
+          bgcolor: "grey.100",
+        }}
+      >
+        {icon}
+      </Box>
+      <Box>
+        <Typography fontWeight={700}>{title}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {subtitle}
+        </Typography>
+      </Box>
+    </CardContent>
+  );
+
+  return (
+    <Grid item xs={12} sm={6} md={fullWidth ? 12 : 3}>
+      <Card variant="outlined" sx={{ height: "100%" }}>
+        {onClick ? (
+          <CardActionArea onClick={onClick} sx={{ height: "100%" }}>
+            {content}
+          </CardActionArea>
+        ) : (
+          <Link href={href ?? "#"} passHref legacyBehavior>
+            <CardActionArea sx={{ height: "100%" }}>{content}</CardActionArea>
+          </Link>
+        )}
+      </Card>
+    </Grid>
+  );
 };
 
-const DashTile: React.FC<DashTileProps> = ({
-  href,
-  icon,
-  title,
-  subtitle,
-  fullWidth,
-}) => (
-  <Grid item xs={12} md={fullWidth ? 12 : 6}>
-    <Card variant="outlined" sx={{ height: "100%" }}>
-      <Link href={href} passHref legacyBehavior>
-        <CardActionArea sx={{ height: "100%" }}>
-          <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: 1,
-                bgcolor: "grey.100",
-              }}
-            >
-              {icon}
-            </Box>
-            <Box>
-              <Typography fontWeight={700}>{title}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {subtitle}
-              </Typography>
-            </Box>
-          </CardContent>
-        </CardActionArea>
-      </Link>
-    </Card>
-  </Grid>
-);
-const ClickableSummaryTile: React.FC<{
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}> = ({ href, icon, label, value }) => (
-  <Card variant="outlined">
-    <Link href={href} passHref legacyBehavior>
-      <CardActionArea>
-        <CardContent sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              display: "grid",
-              placeItems: "center",
-              borderRadius: 1,
-              bgcolor: "grey.100",
-            }}
-          >
-            {icon}
-          </Box>
-          <Box>
-            <Typography variant="body2" color="text.secondary">
-              {label}
-            </Typography>
-            <Typography fontWeight={700}>{value}</Typography>
-          </Box>
-        </CardContent>
-      </CardActionArea>
-    </Link>
-  </Card>
-);
-
-/* ---------- page ---------- */
+/* page */
 const PatientDashboard: React.FC = () => {
   const [data, setData] = useState<PatientDashboardData | null>(null);
   const [dietitian, setDietitian] = useState<DietitianType | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [prefsOpen, setPrefsOpen] = useState<boolean>(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [toast, setToast] = useState<{
     type: "success" | "error";
     msg: string;
   } | null>(null);
-
-  const [mealPlanCount, setMealPlanCount] = useState<number>(0);
+  const [mealPlanCount, setMealPlanCount] = useState(0);
 
   const api =
     process.env.NEXT_PUBLIC_API_URL ||
     "https://hazalkaynak.pythonanywhere.com/";
 
-  const authHeaders = () => {
-    const token = localStorage.getItem("accessToken");
-    return { Authorization: `Bearer ${token}` };
-  };
+  const weightEntries = useMemo(
+    () =>
+      readLocalHistory().map((e) => ({
+        date: e.timestamp,
+        weightKg: e.weightKg,
+      })),
+    []
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -219,12 +221,17 @@ const PatientDashboard: React.FC = () => {
       window.location.href = "/login?redirect=patient-dashboard";
       return;
     }
+    const authHeaders = { Authorization: `Bearer ${token}` };
+
+    let mounted = true;
 
     (async () => {
       try {
         const res = await axios.get(`${api}patient/me/`, {
-          headers: authHeaders(),
+          headers: authHeaders,
         });
+        if (!mounted) return;
+
         const payload: PatientDashboardData = {
           patient: res.data.patient ?? res.data,
           meal_plans: res.data.meal_plans ?? [],
@@ -233,56 +240,62 @@ const PatientDashboard: React.FC = () => {
 
         try {
           const mpRes = await axios.get(`${api}mealplan/get/`, {
-            headers: authHeaders(),
+            headers: authHeaders,
           });
           const list = Array.isArray(mpRes.data)
             ? mpRes.data
             : Array.isArray(mpRes.data?.results)
             ? mpRes.data.results
             : [];
-          setMealPlanCount(list.length);
+          if (mounted) setMealPlanCount(list.length);
         } catch {
-          // fallback to whatever patient/me gave us
           const fallback = Array.isArray(payload.meal_plans)
             ? payload.meal_plans.length
             : Number(payload.meal_plans ?? 0);
-          setMealPlanCount(fallback);
+          if (mounted) setMealPlanCount(fallback);
         }
 
         const dField = payload.patient?.dietician ?? null;
-        const normalized = normalizeDietitian(dField);
-        if (normalized && normalized.id && !normalized.username) {
+        const normal = normalizeDietitian(dField);
+        if (normal && normal.id && !normal.username) {
           try {
-            const r1 = await axios.get(`${api}dietician/${normalized.id}/`);
-            setDietitian(normalizeDietitian(r1.data));
+            const r1 = await axios.get(`${api}dietician/${normal.id}/`, {
+              headers: authHeaders,
+            });
+            if (mounted) setDietitian(normalizeDietitian(r1.data));
           } catch {
             try {
-              const r2 = await axios.get(`${api}dietitian/${normalized.id}/`);
-              setDietitian(normalizeDietitian(r2.data));
+              const r2 = await axios.get(`${api}dietitian/${normal.id}/`, {
+                headers: authHeaders,
+              });
+              if (mounted) setDietitian(normalizeDietitian(r2.data));
             } catch {
-              setDietitian(null);
+              if (mounted) setDietitian(null);
             }
           }
-        } else {
-          setDietitian(normalized);
+        } else if (mounted) {
+          setDietitian(normal);
         }
 
         const ar = await axios.get<Appointment[]>(`${api}appointment/get/`, {
-          headers: authHeaders(),
+          headers: authHeaders,
         });
-        setAppointments(Array.isArray(ar.data) ? ar.data : []);
+        if (mounted) setAppointments(Array.isArray(ar.data) ? ar.data : []);
       } catch (e) {
         if (axios.isAxiosError(e) && e.response?.status === 401) {
           localStorage.removeItem("accessToken");
           window.location.href = "/login?redirect=patient-dashboard";
           return;
         }
-        setErr("Failed to load your profile.");
+        if (mounted) setErr("Failed to load your profile.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => {
+      mounted = false;
+    };
   }, [api]);
 
   const nextApptText = useMemo(() => {
@@ -294,36 +307,27 @@ const PatientDashboard: React.FC = () => {
     return dayjs(soonest.date_time).format("D MMM YYYY, h:mm A");
   }, [appointments]);
 
-  const myDietitianHref =
-    typeof data?.patient.dietician === "number"
-      ? `/dietitian/${data?.patient.dietician}`
-      : (data?.patient.dietician as DietitianType | null)?.username
-      ? `/dietitian/${(data?.patient.dietician as DietitianType).username}`
-      : "/dietitian";
-
   const createAppointment = async (dateTimeIso: string) => {
     if (!data?.patient) return;
     const dieticianId =
       typeof data.patient.dietician === "number"
         ? data.patient.dietician
         : (data.patient.dietician as DietitianType | null)?.id || 0;
-
     if (!dieticianId) {
       setToast({ type: "error", msg: "No dietitian linked to your account." });
       return;
     }
-
     try {
+      const token = localStorage.getItem("accessToken");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const payload = {
         patient: data.patient.id,
         dietician: dieticianId,
         date_time: dateTimeIso,
       };
-      await axios.post(`${api}appointment/add/`, payload, {
-        headers: authHeaders(),
-      });
+      await axios.post(`${api}appointment/add/`, payload, { headers });
       const ar = await axios.get<Appointment[]>(`${api}appointment/get/`, {
-        headers: authHeaders(),
+        headers,
       });
       setAppointments(Array.isArray(ar.data) ? ar.data : []);
       setToast({ type: "success", msg: "Appointment booked." });
@@ -336,9 +340,9 @@ const PatientDashboard: React.FC = () => {
     const ok = window.confirm("Cancel this appointment?");
     if (!ok) return;
     try {
-      await axios.delete(`${api}appointment/delete/${id}/`, {
-        headers: authHeaders(),
-      });
+      const token = localStorage.getItem("accessToken");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.delete(`${api}appointment/delete/${id}/`, { headers });
       setAppointments((prev) => prev.filter((a) => a.id !== id));
       setToast({ type: "success", msg: "Appointment cancelled." });
     } catch {
@@ -358,6 +362,7 @@ const PatientDashboard: React.FC = () => {
       </Box>
     );
   }
+
   if (err || !data) {
     return (
       <Box textAlign="center" mt={5}>
@@ -382,85 +387,86 @@ const PatientDashboard: React.FC = () => {
         <Typography variant="h4" component="h1" fontWeight={600}>
           Welcome back, {p.first_name}!
         </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => setPrefsOpen(true)}
-        >
-          Management
-        </Button>
+        {/* top-right management button removed */}
       </Stack>
 
-      {/* KPI row */}
+      {/* top four tiles */}
       <Grid container spacing={2} mb={4}>
-        <Grid item xs={12} sm={4}>
-          <SummaryTile
-            icon={<CalendarMonthIcon fontSize="large" />}
-            label="Next appointment"
-            value={nextApptText}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          {/* Clickable meal plans KPI with real count */}
-          <ClickableSummaryTile
-            href="/meal-plans"
-            icon={<RestaurantMenuIcon fontSize="large" />}
-            label="Meal plans"
-            value={`${mealPlanCount} in your library`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryTile
-            icon={<FavoriteBorderIcon fontSize="large" />}
-            label="Wellbeing"
-            value="Log BMI and track progress"
-          />
-        </Grid>
+        <DashTile
+          icon={<CalendarMonthIcon fontSize="medium" />}
+          title="Your Next Appointment"
+          subtitle={nextApptText}
+          href="/appointments"
+        />
+        <DashTile
+          icon={<RestaurantMenuIcon fontSize="medium" />}
+          title="Meal Plan"
+          subtitle={`${mealPlanCount} in your library`}
+          href="/meal-plans"
+        />
+        <DashTile
+          icon={<RestaurantMenuIcon fontSize="medium" />}
+          title="Recipes"
+          subtitle="See the recipes your dietitian shared"
+          href="/recipes"
+        />
+        <DashTile
+          icon={<ManageAccountsIcon fontSize="medium" />}
+          title="Profile Management"
+          subtitle="Change your settings"
+          onClick={() => setPrefsOpen(true)}
+        />
       </Grid>
 
-      {/* Left tiles + Right summary */}
-      <Grid container spacing={2} mb={4}>
-        <Grid item xs={12} md={6}>
-          <Grid container spacing={2}>
-            <DashTile
-              href="/meal-plans"
-              icon={<MenuBookIcon />}
-              title="Meal plans"
-              subtitle="See your plans"
-            />
-            <DashTile
-              href="/recipes"
-              icon={<RestaurantMenuIcon />}
-              title="Recipes"
-              subtitle="Search and explore"
-            />
-            <DashTile
-              href="/measurements"
-              icon={<StraightenIcon />}
-              title="My Measurements"
-              subtitle="Open and log measurements"
-            />
-            <DashTile
-              href={myDietitianHref}
-              icon={<PersonOutlineIcon />}
-              title="My dietitian"
-              subtitle="View profile"
-            />
-            <DashTile
-              href="/management"
-              icon={<ManageAccountsIcon />}
-              title="Management"
-              subtitle="Allergies and account"
-              fullWidth
+      <Box mb={4}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={1}
+        >
+          <Box>
+            <Typography variant="h5" component="h2">
+              Your Measurements
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              See how your body changed
+            </Typography>
+          </Box>
+          <Button
+            href="/measurements"
+            component={Link}
+            variant="contained"
+            size="small"
+            sx={{ textTransform: "none" }}
+          >
+            Add Measurements
+          </Button>
+        </Stack>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={7}>
+            <MeasurementsChart
+              entries={weightEntries}
+              yKey="weightKg"
+              height={260}
             />
           </Grid>
+          <Grid item xs={12} md={5}>
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+              sx={{ mb: 1 }}
+            >
+              Last Measurements
+            </Typography>
+            <MeasurementHistory maxItems={2} minCardWidth={220} />
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <MeasurementSummaryCard hideButton />
-        </Grid>
-      </Grid>
+      </Box>
 
-      {/* Dietitian card */}
+      {/* removed the lower quick-link tiles */}
+
       <Box mt={2} mb={3}>
         <Typography variant="h5" component="h2" gutterBottom>
           Your dietitian
@@ -478,7 +484,6 @@ const PatientDashboard: React.FC = () => {
         )}
       </Box>
 
-      {/* Appointments */}
       {!!appointments.length && (
         <Box mt={1} mb={3}>
           <Typography variant="h5" component="h2" gutterBottom>
@@ -540,9 +545,7 @@ const PatientDashboard: React.FC = () => {
             await axios.post(`${api}patient/preferences/`, payload, {
               headers: { Authorization: `Bearer ${token}` },
             });
-          } catch {
-            /* swallow */
-          }
+          } catch {}
         }}
       />
 

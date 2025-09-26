@@ -15,6 +15,12 @@ type Entry = {
   hipsCm?: number;
 };
 
+export interface MeasurementHistoryProps {
+  maxItems?: number;
+  minCardWidth?: number;
+  bold?: boolean;
+}
+
 const STORAGE_KEY = "measure_history_v1";
 
 const Row: React.FC<{
@@ -22,7 +28,8 @@ const Row: React.FC<{
   v?: number;
   u: string;
   t: "up" | "down" | "dot";
-}> = ({ k, v, u, t }) => (
+  bold: boolean;
+}> = ({ k, v, u, t, bold }) => (
   <Box
     sx={{
       display: "grid",
@@ -37,7 +44,7 @@ const Row: React.FC<{
       variant="body2"
       sx={{
         fontSize: 13.5,
-        fontWeight: 600,
+        fontWeight: bold ? 600 : 500,
         color: "text.secondary",
         whiteSpace: "nowrap",
       }}
@@ -48,13 +55,21 @@ const Row: React.FC<{
     <Stack direction="row" spacing={0.5} alignItems="center">
       <Typography
         variant="body2"
-        sx={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}
+        sx={{
+          fontSize: 13.5,
+          fontWeight: bold ? 700 : 600,
+          whiteSpace: "nowrap",
+        }}
       >
         {typeof v === "number" ? `${v}${u ? ` ${u}` : ""}` : "–"}
       </Typography>
       <Typography
         variant="body2"
-        sx={{ fontSize: 13.5, fontWeight: 700, color: "text.disabled" }}
+        sx={{
+          fontSize: 13.5,
+          fontWeight: bold ? 700 : 600,
+          color: "text.disabled",
+        }}
       >
         {t === "up" ? "↑" : t === "down" ? "↓" : "•"}
       </Typography>
@@ -69,7 +84,11 @@ const trend = (a?: number, b?: number): "up" | "down" | "dot" => {
   return "dot";
 };
 
-const MeasurementHistory: React.FC = () => {
+const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({
+  maxItems,
+  minCardWidth = 200,
+  bold = true,
+}) => {
   const [history, setHistory] = useState<Entry[]>([]);
 
   useEffect(() => {
@@ -82,18 +101,19 @@ const MeasurementHistory: React.FC = () => {
     }
   }, []);
 
-  const last = history.slice(0, 5);
+  const list =
+    typeof maxItems === "number" ? history.slice(0, maxItems) : history;
 
   return (
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+        gridTemplateColumns: `repeat(auto-fill, minmax(${minCardWidth}px, 1fr))`,
         gap: 1,
       }}
     >
-      {last.map((e, i) => {
-        const prev = last[i + 1];
+      {list.map((e, i) => {
+        const prev = list[i + 1];
         return (
           <Card
             key={e.date}
@@ -129,44 +149,50 @@ const MeasurementHistory: React.FC = () => {
                   v={e.weightKg}
                   u="kg"
                   t={trend(e.weightKg, prev?.weightKg)}
+                  bold={bold}
                 />
-                <Row k="BMI" v={e.bmi} u="" t="dot" />
+                <Row k="BMI" v={e.bmi} u="" t="dot" bold={bold} />
                 <Row
                   k="Waist"
                   v={e.waistCm}
                   u="cm"
                   t={trend(e.waistCm, prev?.waistCm)}
+                  bold={bold}
                 />
                 <Row
                   k="Chest"
                   v={e.chestCm}
                   u="cm"
                   t={trend(e.chestCm, prev?.chestCm)}
+                  bold={bold}
                 />
                 <Row
                   k="Arm"
                   v={e.armCm}
                   u="cm"
                   t={trend(e.armCm, prev?.armCm)}
+                  bold={bold}
                 />
                 <Row
                   k="Hips"
                   v={e.hipsCm}
                   u="cm"
                   t={trend(e.hipsCm, prev?.hipsCm)}
+                  bold={bold}
                 />
                 <Row
                   k="Thigh"
                   v={e.thighCm}
                   u="cm"
                   t={trend(e.thighCm, prev?.thighCm)}
+                  bold={bold}
                 />
               </Stack>
             </CardContent>
           </Card>
         );
       })}
-      {last.length === 0 && (
+      {list.length === 0 && (
         <Typography variant="body2" color="text.secondary">
           No measurements saved yet.
         </Typography>
