@@ -15,8 +15,8 @@ const geistMono = localFont({
   weight: "100 900",
 });
 export const metadata: Metadata = {
-  title: "Fit Nutrition",
-  description: "Fit Nutrition Web App",
+  title: "FitNutrition",
+  description: "All-in-one platform for personalized nutrition planning, meal tracking, recipes, and dietitian support.",
 };
 export default function RootLayout({
   children,
