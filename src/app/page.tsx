@@ -1,4 +1,3 @@
-"use client";
 import React from "react";
 import Image from "next/image";
 import { Box } from "@mui/material";
@@ -8,6 +7,12 @@ import HeroSection from "@/components/HeroSection";
 import MetricsBanner from "@/components/MetricsBanner";
 import Carousel from "@/components/Carousel";
 import CtaSection from "@/components/CtaSection";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Fit Nutrition — Find Expert Dietitians & Personalized Meal Plans",
+  description: "Connect with registered dietitians, access AI-powered meal planning and recipe tools, and simplify nutrition for you or your clients.",
+};
 
 const SERVICE_ITEMS = [
   {
@@ -66,19 +71,16 @@ const METRICS = [
 
 const TESTIMONIALS = [
   {
-    img: "/images/avatars/sofia.jpg",
     name: "Dr. Sofia Mendes, Clinical Dietitian",
     quote:
       "The built‑in meal planning tools cut my session prep time in half. My clients love the personalized recipe library!",
   },
   {
-    img: "/images/avatars/mark.jpg",
     name: "Mark Duval, Sports Nutritionist",
     quote:
       "Booking consultations is now seamless. No more back‑and‑forth emails.",
   },
   {
-    img: "/images/avatars/ayse.jpg",
     name: "Ayşe Karaca, Registered Dietitian",
     quote:
       "It’s like having an assistant that knows my workflow. From recipe macros to reminders, this app just gets dietitians.",
@@ -94,7 +96,6 @@ const LandingPage: React.FC = () => {
         bgImage="/images/slider.png"
         searchBarProps={{
           placeholder: "Search for dietitians",
-          onSearch: (q) => console.log("search:", q),
         }}
         primaryCta={{ label: "Book an Appointment", href: "/booking" }}
       />

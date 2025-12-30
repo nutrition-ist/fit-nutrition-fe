@@ -17,6 +17,9 @@ import {
   Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import nitImage from "Fi/logo.png";
+import Image from "next/image";
+
 export type Role = "visitor" | "patient" | "dietitian";
 
 export interface NavbarProps {
@@ -44,6 +47,7 @@ const cfg: Record<Role, RoleConfig> = {
       { label: "Dashboard", href: "/patient-dashboard" },
       { label: "Dietitians", href: "/dietitian" },
       { label: "Recipes", href: "/recipes" },
+      { label: "Blog", href: "/blog" },
     ],
   },
   dietitian: {
@@ -51,13 +55,13 @@ const cfg: Record<Role, RoleConfig> = {
       { label: "Dashboard", href: "/dietitian-dashboard" },
       { label: "Dietitians", href: "/dietitian" },
       { label: "Recipes", href: "/recipes" },
+      { label: "Blog", href: "/blog" },
     ],
   },
 } as const;
 
 const Navbar: FC<NavbarProps> = ({
   role: roleProp,
-  logo = { primary: "FIT", secondary: "NUTRITION", href: "/" },
   bgcolor = "#002a23",
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -143,16 +147,12 @@ const Navbar: FC<NavbarProps> = ({
       <AppBar position="sticky" elevation={0} sx={{ bgcolor }}>
         <Toolbar sx={{ minHeight: { xs: 56, md: 72 }, px: { xs: 2, md: 3 } }}>
           {/* Logo */}
-          <Link href={logo.href ?? "/"} passHref>
-            <Box sx={{ display: "flex", alignItems: "baseline", cursor: "pointer" }}>
-              <Typography sx={{ fontSize:"1.25rem", fontWeight: 700, color: "#C35200", mr: 0.5 }}>
-                {logo.primary}
-              </Typography>
-              <Typography sx={{ fontSize:"1.25rem", fontWeight: 700 }}>
-                {logo.secondary}
-              </Typography>
-            </Box>
-          </Link>
+          <Link href="/" passHref>
+            <Image
+              src={nitImage}
+              alt="Website Logo"
+              height={60}
+              style={{ cursor: "pointer" }}></Image></Link>
 
           <Box sx={{ flexGrow: 1 }} />
 

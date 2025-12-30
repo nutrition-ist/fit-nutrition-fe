@@ -20,7 +20,7 @@ import {
 type NumOrEmpty = number | "";
 
 export interface MeasurementsEntry {
-  date: string; 
+  date: string;
   heightCm?: number;
   weightKg?: number;
   armCm?: number;
@@ -62,6 +62,7 @@ const saveHistory = (list: MeasurementsEntry[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch {
+    // ignore
   }
 };
 
@@ -101,12 +102,8 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
       thighCm: typeof thighCm === "number" ? thighCm : undefined,
       hipsCm: typeof hipsCm === "number" ? hipsCm : undefined,
     };
-    if (entry.heightCm)
-      localStorage.setItem(HEIGHT_KEY, String(entry.heightCm));
-    const computedBmi = calcBmi(
-      entry.heightCm,
-      entry.weightKg ?? latest?.weightKg
-    );
+    if (entry.heightCm) localStorage.setItem(HEIGHT_KEY, String(entry.heightCm));
+    const computedBmi = calcBmi(entry.heightCm, entry.weightKg ?? latest?.weightKg);
     if (computedBmi !== null) entry.bmi = computedBmi;
 
     const next = [entry, ...history].slice(0, 50);
@@ -130,27 +127,45 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
     return round1(a - b);
   };
 
-  const DeltaChip: React.FC<{ field: keyof MeasurementsEntry }> = ({
-    field,
-  }) => {
+  const oldestValue = (field: keyof MeasurementsEntry): number | null => {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const v = history[i]?.[field];
+      if (typeof v === "number") return v;
+    }
+    return null;
+  };
+
+  const colorForDelta = (d: number, field: keyof MeasurementsEntry): "default" | "success" | "warning" => {
+    const goodIfDown = field !== "armCm" && field !== "chestCm";
+    if (d === 0) return "default";
+    if (d < 0) return goodIfDown ? "success" : "warning";
+    return goodIfDown ? "warning" : "success";
+  };
+
+  const DeltaChip: React.FC<{ field: keyof MeasurementsEntry }> = ({ field }) => {
     const d = delta(field);
     if (d === null) return null;
-
-    const goodIfDown = field !== "armCm" && field !== "chestCm";
-    const color: "default" | "success" | "warning" =
-      d === 0
-        ? "default"
-        : d < 0
-        ? goodIfDown
-          ? "success"
-          : "warning"
-        : goodIfDown
-        ? "warning"
-        : "success";
-
+    const color = colorForDelta(d, field);
     const sign = d > 0 ? "+" : d < 0 ? "–" : "±";
+    const unit = field === "weightKg" ? " kg" : field === "bmi" ? "" : " cm";
+    return <Chip size="small" color={color} label={`${sign}${Math.abs(d)}${unit}`} />;
+  };
+
+  const DeltaFromFirst: React.FC<{ field: keyof MeasurementsEntry }> = ({ field }) => {
+    const latestV = latest?.[field];
+    const firstV = oldestValue(field);
+    if (typeof latestV !== "number" || typeof firstV !== "number") return null;
+    const d = round1(latestV - firstV);
+    const color = colorForDelta(d, field);
+    const sign = d > 0 ? "+" : d < 0 ? "–" : "±";
+    const unit = field === "weightKg" ? " kg" : field === "bmi" ? "" : " cm";
     return (
-      <Chip size="small" color={color} label={`${sign}${Math.abs(d)} cm`} />
+      <Chip
+        size="small"
+        color={color}
+        label={`${sign}${Math.abs(d)}${unit} vs first`}
+        sx={{ ml: 0.5 }}
+      />
     );
   };
 
@@ -170,11 +185,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Height (cm)"
                     type="number"
                     value={heightCm}
-                    onChange={(e) =>
-                      setHeightCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setHeightCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 80, max: 250, step: 1 }}
                     fullWidth
                   />
@@ -184,11 +195,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Weight (kg)"
                     type="number"
                     value={weightKg}
-                    onChange={(e) =>
-                      setWeightKg(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setWeightKg(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 20, max: 300, step: 0.1 }}
                     fullWidth
                   />
@@ -199,11 +206,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Arm (cm)"
                     type="number"
                     value={armCm}
-                    onChange={(e) =>
-                      setArmCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setArmCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 5, max: 80, step: 0.1 }}
                     fullWidth
                   />
@@ -213,11 +216,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Waist (cm)"
                     type="number"
                     value={waistCm}
-                    onChange={(e) =>
-                      setWaistCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setWaistCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 30, max: 200, step: 0.1 }}
                     fullWidth
                   />
@@ -228,11 +227,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Chest (cm)"
                     type="number"
                     value={chestCm}
-                    onChange={(e) =>
-                      setChestCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setChestCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 30, max: 200, step: 0.1 }}
                     fullWidth
                   />
@@ -242,11 +237,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Thigh (cm)"
                     type="number"
                     value={thighCm}
-                    onChange={(e) =>
-                      setThighCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setThighCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 20, max: 120, step: 0.1 }}
                     fullWidth
                   />
@@ -257,11 +248,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     label="Hips (cm)"
                     type="number"
                     value={hipsCm}
-                    onChange={(e) =>
-                      setHipsCm(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setHipsCm(e.target.value === "" ? "" : Number(e.target.value))}
                     inputProps={{ min: 30, max: 200, step: 0.1 }}
                     fullWidth
                   />
@@ -273,9 +260,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                   Save measurements
                 </Button>
                 <Typography variant="body2" color="text.secondary">
-                  {bmi !== null
-                    ? `BMI: ${bmi}`
-                    : "BMI will show after height & weight"}
+                  {bmi !== null ? `BMI: ${bmi}` : "BMI will show after height & weight"}
                 </Typography>
               </Stack>
             </Stack>
@@ -289,71 +274,70 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
               <Stack spacing={1} mt={1}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Weight</Typography>
-                  <Chip
-                    label={latest?.weightKg ? `${latest.weightKg} kg` : "—"}
-                    size="small"
-                  />
+                  <Chip label={latest?.weightKg ? `${latest.weightKg} kg` : "—"} size="small" />
                   <DeltaChip field="weightKg" />
+                  <DeltaFromFirst field="weightKg" />
                 </Stack>
 
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>BMI</Typography>
-                  <Chip
-                    label={latest?.bmi ? latest.bmi : bmi ?? "—"}
-                    size="small"
-                  />
+                  <Chip label={latest?.bmi ?? bmi ?? "—"} size="small" />
+                  <DeltaChip field="bmi" />
+                  <DeltaFromFirst field="bmi" />
                 </Stack>
 
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Arm</Typography>
                   <Chip label={latest?.armCm ?? "—"} size="small" />
                   <DeltaChip field="armCm" />
+                  <DeltaFromFirst field="armCm" />
                 </Stack>
+
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Waist</Typography>
                   <Chip label={latest?.waistCm ?? "—"} size="small" />
                   <DeltaChip field="waistCm" />
+                  <DeltaFromFirst field="waistCm" />
                 </Stack>
+
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Chest</Typography>
                   <Chip label={latest?.chestCm ?? "—"} size="small" />
                   <DeltaChip field="chestCm" />
+                  <DeltaFromFirst field="chestCm" />
                 </Stack>
+
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Thigh</Typography>
                   <Chip label={latest?.thighCm ?? "—"} size="small" />
                   <DeltaChip field="thighCm" />
+                  <DeltaFromFirst field="thighCm" />
                 </Stack>
+
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography sx={{ minWidth: 120 }}>Hips</Typography>
                   <Chip label={latest?.hipsCm ?? "—"} size="small" />
                   <DeltaChip field="hipsCm" />
+                  <DeltaFromFirst field="hipsCm" />
                 </Stack>
 
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  {latest?.date
-                    ? `Last saved: ${new Date(latest.date).toLocaleString()}`
-                    : "No entries yet"}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                  {latest?.date ? `Last saved: ${new Date(latest.date).toLocaleString()}` : "No entries yet"}
                 </Typography>
 
                 <Divider sx={{ my: 1.5 }} />
 
                 <Typography variant="subtitle2" color="text.secondary">
-                  History (last 5)
+                  History (last 7)
                 </Typography>
+
                 <List dense>
-                  {history.slice(0, 5).map((e) => (
+                  {history.slice(0, 7).map((e) => (
                     <ListItem key={e.date} disableGutters>
                       <ListItemText
                         primaryTypographyProps={{ variant: "body2" }}
                         secondaryTypographyProps={{ variant: "caption" }}
-                        primary={`${new Date(e.date).toLocaleDateString()} • ${
-                          e.weightKg ? `${e.weightKg} kg` : "—"
-                        }${e.bmi ? ` • BMI ${e.bmi}` : ""}`}
+                        primary={`${new Date(e.date).toLocaleDateString('en-GB')} • ${e.weightKg ? `${e.weightKg} kg` : "—"}${e.bmi ? ` • BMI ${e.bmi}` : ""}`}
                         secondary={[
                           e.waistCm ? `Waist ${e.waistCm} cm` : null,
                           e.hipsCm ? `Hips ${e.hipsCm} cm` : null,
@@ -372,6 +356,7 @@ const MyMeasurements: React.FC<MyMeasurementsProps> = ({ onSaved }) => {
                     </Typography>
                   )}
                 </List>
+
               </Stack>
             </Box>
           </Grid>

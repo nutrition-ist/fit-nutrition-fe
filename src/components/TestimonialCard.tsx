@@ -4,7 +4,7 @@ import React, { FC } from "react";
 import { Avatar, Card, Stack, Typography } from "@mui/material";
 
 export interface TestimonialCardProps {
-  img: string;
+  img?: string;
   name: string;
   quote: string;
 }
