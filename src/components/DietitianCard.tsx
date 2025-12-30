@@ -52,7 +52,8 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onCardClick }) => {
 
   /* qualification chip logic */
   const firstTwo = dietitian.qualifications.slice(0, 2);
-  const extra = dietitian.qualifications.length - firstTwo.length;
+  const extra = dietitian.qualifications.slice(2);
+  const extraCount = extra.length;
 
   return (
     <Card
@@ -124,12 +125,11 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onCardClick }) => {
         {/* qualifications */}
         <Stack
           direction="row"
-          spacing={1}
           sx={{
             flexWrap: "wrap",
             mb: 2,
-            maxHeight: 52,
-            minHeight: 52,
+            maxHeight: 64,
+            minHeight: 64,
             overflow: "hidden",
           }}
         >
@@ -139,21 +139,25 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onCardClick }) => {
               label={q}
               size="small"
               sx={{
-                height: 26,
-                borderRadius: 0,
+                borderRadius: 2,
+                mb: 1,
                 fontWeight: 600,
-                bgcolor: "#ffffff",
+                bgcolor: "common.white",
+                color: "#007560",
+                boxShadow: 3,
+                py: 1,
+                mr: 1,
               }}
             />
           ))}
 
-          {extra > 0 && (
+          {extraCount > 0 && (
             <Tooltip
               arrow
               placement="top"
               title={
                 <Stack spacing={0.5}>
-                  {dietitian.qualifications.map((q) => (
+                  {extra.map((q) => (
                     <Typography key={q} variant="body2">
                       • {q}
                     </Typography>
@@ -165,22 +169,23 @@ const DietitianCard: FC<DietitianCardProps> = ({ dietitian, onCardClick }) => {
                   sx: {
                     bgcolor: "#ffffff",
                     color: "#333",
-                    border: "1px solid #ccc",
                     boxShadow: 3,
-                    p: 1,
+                    py: 1,
                   },
                 },
               }}
             >
               <Chip
-                label={`+${extra}`}
+                label={`+${extraCount}`}
                 size="small"
                 sx={{
-                  height: 26,
-                  borderRadius: 0,
+                  borderRadius: 2,
+                  mb: 1,
                   fontWeight: 600,
                   bgcolor: "#007560",
-                  color: "#fff",
+                  color: "common.white",
+                  boxShadow: 3,
+                  py: 1,
                 }}
               />
             </Tooltip>
