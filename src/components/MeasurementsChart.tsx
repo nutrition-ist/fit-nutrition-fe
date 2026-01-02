@@ -56,6 +56,8 @@ const UNITS: Record<MetricKey, string> = {
   hipsCm: "cm",
 };
 
+const ONE_DAY = 24 * 60 * 60 * 1000;
+
 // minimum default ranges (these are minimums that can expand if data sits outside)
 const BASE_RANGES: Record<MetricKey, [number, number]> = {
   weightKg: [35, 135],
@@ -111,9 +113,7 @@ const MeasurementsChart: React.FC<MeasurementsChartProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  const series = useMemo(() => extractSeries(entries, metric), [entries, metric]);
-
-  const ONE_DAY = 24 * 60 * 60 * 1000;
+  const series = useMemo(() => extractSeries(entries, metric), [entries, metric]);  
 
   const dataXMin = useMemo(
     () => (series.length ? Math.min(...series.map((p) => p.date.getTime())) : 0),

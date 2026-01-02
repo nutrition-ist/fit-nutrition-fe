@@ -113,8 +113,8 @@ const MeasurementsPage: React.FC = () => {
           <Typography variant="h4" fontWeight={700}>
             My Measurements
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Enter your measurements on the right and click "Save measurements".
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Enter your measurements on the right and click &quot;Save measurements&quot;.
             The chart updates automatically and shows recent values with dates on the X axis.
           </Typography>
         </div>
@@ -185,7 +185,7 @@ const MeasurementsPage: React.FC = () => {
               Interpreting deltas: The measurements panel shows two change indicators beside each metric — the first compares your most recent entry to the previous entry, the second compares the most recent to the earliest recorded value (for that metric). Colours indicate whether a change is generally positive or negative (e.g. weight down typically marked as good).
             </Typography>
 
-            <Typography variant="body2" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" paragraph>
               If you want any of these defaults adjusted (for example a different weight range), tell me which metric and preferred min/max and I can update it.
             </Typography>
           </Paper>
