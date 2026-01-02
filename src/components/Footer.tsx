@@ -71,7 +71,7 @@ const Footer: React.FC = () => (
         variant="caption"
         sx={{ display: "block", textAlign: "center", mt: 4 }}
       >
-        © {new Date().getFullYear()} Fit Nutrition. All rights reserved.
+        © {new Date().getFullYear()} Fit Nutrition. All rights reserved. FitNutrition is a Work in Progress, and fitnutrition.ist is it's demo.
       </Typography>
     </Container>
   </Box>

@@ -59,10 +59,7 @@ const FeatureSection: React.FC = () => (
         align="center"
         sx={{ mb: { xs: 8, md: 10 }, maxWidth: 900, mx: "auto" }}
       >
-        Manage your entire practice with a powerful, intuitive platform designed
-        for nutrition professionals. Whether you&apos;re running a clinic or
-        offering remote consultations, our features are built to simplify your
-        day and amplify client results.
+        Manage your entire practice with a powerful, intuitive platform currently being designed for nutrition professionals. Whether you&apos;re running a clinic or offering remote consultations, our features are built to simplify your day and amplify client results.
       </Typography>
 
       {/* Alternating feature rows */}
